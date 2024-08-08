@@ -35,11 +35,12 @@
   </RestoreSources>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="KDG-Net-Common" Version="0.0.1" />
     <PackageReference Include="KDG-Net-Migrations" Version="0.0.1" />
     <PackageReference Include="KDG-Net-Database" Version="0.0.3" />
-    <PackageReference Include="KDG-Net-Common" Version="0.0.1" />
-    <PackageReference Include="KDG-Net-Connector" Version="0.0.1" />
     <PackageReference Include="KDG-Net-Cron" Version="0.0.1" />
+    <PackageReference Include="KDG-Net-Connector" Version="0.0.1" />
+    <PackageReference Include="KDG-Net-Creator" Version="0.0.1" />
   </ItemGroup>
 
   <Target Name="RunMigrationsApp" BeforeTargets="Build">
