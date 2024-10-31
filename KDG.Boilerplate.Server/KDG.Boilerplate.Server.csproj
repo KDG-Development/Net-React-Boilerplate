@@ -42,6 +42,8 @@
     <PackageReference Include="KDG-Net-Connector" Version="0.0.1" />
     <PackageReference Include="KDG-Net-Zoho-Creator" Version="0.0.1" />
     <PackageReference Include="KDG-Net-Zoho-CRM" Version="0.0.1" />
+    <PackageReference Include="KDG-Net-Users" Version="0.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.10" />
   </ItemGroup>
 
   <Target Name="RunMigrationsApp" BeforeTargets="Build">

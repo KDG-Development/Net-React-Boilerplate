@@ -1,6 +1,9 @@
 # IDE specific
 .vs
 
+# Development tools
+DevTools/**
+
 # Server ignore
 bin
 obj

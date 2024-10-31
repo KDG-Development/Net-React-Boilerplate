@@ -9,6 +9,14 @@
 
 2. Your browser should open automatically, otherwise. If it doesn't, manucally navigate to https://localhost:5173
 
+## Additional DevTools
+
+Additional [DevTools](https://github.com/KDG-Development/KDG-Net-DevTools) are available to assist with development when using this boilerplate
+
+1. Install with `git clone https://github.com/KDG-Development/KDG-Net-DevTools ./DevTools`
+2. See the [README](https://github.com/KDG-Development/KDG-Net-DevTools/blob/main/README.md) for more information
+
+
 # Staying up to date
 
 This boilerplate is designed to be both a starting point and an ever-evolving foundation for your .NET/React applications.
