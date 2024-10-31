@@ -10,8 +10,6 @@ IConfiguration config =
 
 var connectionString = config.GetSection("ConnectionString").Value;
 
-Console.WriteLine($"conn: {connectionString}");
-
 if (connectionString == null){
     throw new Exception("connection string missing for migrations");
 }
@@ -19,7 +17,7 @@ if (connectionString == null){
 KDG.Migrations.Migrations migration = new KDG.Migrations.Migrations(
     new MigrationConfig(
         connectionString,
-        "scripts"
+        Path.Combine(AppContext.BaseDirectory, "scripts")
     )
 );
 migration.Migrate();
