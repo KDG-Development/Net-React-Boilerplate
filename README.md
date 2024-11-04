@@ -1,6 +1,12 @@
+# Introduction
+
+Follow the instructions under "Getting Started" to develop features directly applicable to the boilerplate project.
+
+In order to build a new project using the boilerplate code, follow the instructions under "Creating a Project Based on Boilerplate".
+
 # Getting Started
 
-1. Fork or clone the repository to your machine
+1. Fork or clone the boilerplate repository to your machine
 2. If cloned, rename the remote with `git remote rename origin boilerplate`
 3. Ensure you have an appropriate `appsettings.development.json`, which matches the default apsettings file present in both `KDG.Boilerplate.Server` and `Migrations`.
 4. Manage and execute migrations `cd Migrations && dotnet run`
@@ -8,6 +14,17 @@
 > This will install all required server and client dependencies
 
 2. Your browser should open automatically, otherwise. If it doesn't, manucally navigate to https://localhost:5173
+
+# Creating a Project Based on Boilerplate
+
+1. Initialize project repository
+2. Clone project repository to your machine
+3. Add the boilerplate origin with `git remote add https://github.com/KDG-Development/Net-React-Boilerplate.git boilerplate`
+4. Prevent accidental pushes to boilerplate origin with `git remote set-url boilerplate --push "do not push"`
+5. Pull boilerplate code into project repository with `git pull boilerplate [boilerplate repository branch]`
+6. Push boilerplate code to project origin with `git push`
+7. Follow steps 3-5 under "Getting Started" in project repository.
+8. Include a note in project documentation to follow steps 3-5 in this section while setting up the project on a new machine.
 
 ## Additional DevTools
 
@@ -20,7 +37,7 @@ Additional [DevTools](https://github.com/KDG-Development/KDG-Net-DevTools) are a
 
 # Staying up to date
 
-This boilerplate is designed to be both a starting point and an ever-evolving foundation for your .NET/React applications.
+This boilerplate is designed to be both a starting point and an ever-evolving foundation for your .NET/React applications. This section is applicable both for developing features directly for the boilerplate, as well as project repositories.
 
 In order to extract the most value from this boilerplate, it is important to keep your application up to date frequently reintegrating into your application with one of the applicable workflows:
 
