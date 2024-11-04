@@ -1,10 +1,10 @@
 import { createContext, useContext, useState } from "react"
-import { TUserAuth } from "../types/common/auth"
+import { TUserAuthBase } from "../types/common/auth"
 import Storage from "../common/storage"
 
 type TAuthContext = {
-  user:TUserAuth|null
-  login:(_:TUserAuth)=>void
+  user:TUserAuthBase|null
+  login:(_:TUserAuthBase)=>void
   logout:()=>void
 }
 
@@ -14,9 +14,9 @@ type TProviderProps = {
   children:React.ReactNode
 }
 export const AuthContextProvider = ({children}:TProviderProps) => {
-  const [user,setUser] = useState<TUserAuth|null>(null)
+  const [user,setUser] = useState<TUserAuthBase|null>(null)
 
-  const login = (auth:TUserAuth) => {
+  const login = (auth:TUserAuthBase) => {
     Storage.storeAuthToken(auth.jwt)
     setUser(auth)
   }

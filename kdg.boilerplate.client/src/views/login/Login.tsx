@@ -1,10 +1,14 @@
-import { Row, Col, AsyncButton, useAppNavigation } from 'kdg-react'
+import { Row, Col, AsyncButton, useAppNavigation, TextInput, PasswordInput } from 'kdg-react'
 import { useEffect, useState } from 'react'
 import { useAuthContext } from '../../context/AuthContext'
 import { ROUTE_PATH } from '../../routing/AppRouter'
+import { defaultUserLoginForm, TUserLoginForm } from '../../types/user/user'
+import { appLogin } from '../../api/auth'
+import { tryParseJWT } from '../../util/jwt'
 
 export const Login = () => {
 
+  const [form,setForm] = useState<TUserLoginForm>(defaultUserLoginForm)
   const [loading,setLoading] = useState(false)
 
   const {login,user} = useAuthContext()
@@ -20,12 +24,10 @@ export const Login = () => {
     setLoading(true)
     try {
       // add your custom login functionality here
-      await new Promise(resolve => resolve(
-        login({
-          id:'example-id',
-          jwt:'example-jwt',
-        })
-      ))
+      await appLogin({
+        body:form,
+        success:x => login(tryParseJWT(x)),
+      })
     } catch (e) {
       console.error('unable to login:', e)
     } finally {
@@ -50,18 +52,29 @@ export const Login = () => {
 
   return (
     <>
-      <div>
-        <Row>
-          <Col>
-            <AsyncButton
-              loading={loading}
-              onClick={handleLogin}
-            >
-              Login
-            </AsyncButton>  
-          </Col>
-        </Row>
-      </div>
+    <div className='d-flex min-vh-100 align-items-center'>
+      <Row className=''>
+        <Col sm={6}>
+          <TextInput
+            label='Email'
+            value={form.email}
+            onChange={email => setForm(prev => ({...prev, email}))}
+          />
+          <PasswordInput
+            label='Password'
+            value={form.password}
+            onChange={password => setForm(prev => ({...prev, password}))}
+          /> 
+          <AsyncButton
+            className='my-4'
+            loading={loading}
+            onClick={handleLogin}
+          >
+            Login
+          </AsyncButton> 
+        </Col>
+      </Row>
+    </div>
     </>
   )
 }
