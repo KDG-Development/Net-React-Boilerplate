@@ -13,6 +13,7 @@
 
 Additional [DevTools](https://github.com/KDG-Development/KDG-Net-DevTools) are available to assist with development when using this boilerplate
 
+1. At the root of the project, run `mkdir DevTools` if the folder doesnt exist
 1. Install with `git clone https://github.com/KDG-Development/KDG-Net-DevTools ./DevTools`
 2. See the [README](https://github.com/KDG-Development/KDG-Net-DevTools/blob/main/README.md) for more information
 
