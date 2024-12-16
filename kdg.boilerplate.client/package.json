@@ -1,10 +1,10 @@
 {
   "name": "kdg.boilerplate.client",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "engines": {
-    "node": ">=16.20.0"
+    "node": ">=20.18.1"
   },
   "scripts": {
     "predev": "node prestart.cjs",
