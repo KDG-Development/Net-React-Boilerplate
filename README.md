@@ -15,6 +15,10 @@ In order to build a new project using the boilerplate code, follow the instructi
 
 2. Your browser should open automatically, otherwise. If it doesn't, manucally navigate to https://localhost:5173
 
+# Running with Docker
+
+1. Run `docker compose up --build`
+
 # Creating a Project Based on Boilerplate
 
 1. Initialize project repository

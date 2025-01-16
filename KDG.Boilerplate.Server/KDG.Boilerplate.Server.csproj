@@ -9,6 +9,7 @@
     <SpaRoot>..\kdg.boilerplate.client</SpaRoot>
     <SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
     <SpaProxyServerUrl>https://localhost:5173</SpaProxyServerUrl>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
@@ -47,7 +48,7 @@
   </ItemGroup>
 
   <Target Name="RunMigrationsApp" BeforeTargets="Build">
-    <Exec Command="dotnet run --project ..\Migrations\Migrations.csproj" />
+    <Exec Command="dotnet run --project ../Migrations/Migrations.csproj" />
   </Target>
 
 </Project>
