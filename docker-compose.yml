@@ -1,0 +1,39 @@
+services:
+  webapp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: local
+      args:
+        - BUILD_CONFIGURATION=Development
+        # Uncomment if using CoreUI Pro
+        # - NPM_TOKEN=${NPM_TOKEN}
+    ports:
+      - "5173:5173"
+      - "5001:5001"
+      - "5260:5260"
+    volumes:
+      - ./kdg.boilerplate.client:/src/kdg.boilerplate.client
+      - ./KDG.Boilerplate.Server:/src/KDG.Boilerplate.Server
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5260
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16
+    container_name: db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+      # Add any other environment variables your app needs
+    # Optional health check
