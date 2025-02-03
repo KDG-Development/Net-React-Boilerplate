@@ -7,6 +7,7 @@ using Microsoft.Net.Http.Headers;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddJsonFile("/src/appsettings.development.json");
 
 // Add services to the container.
 
@@ -16,7 +17,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // configure datastore
-var connectionString = builder.Configuration["ConnectionString"] ?? throw new Exception("Connection string not configured");
+var connectionString = builder.Configuration["ConnectionStrings:DefaultConnection"] ?? throw new Exception("Connection string not configured");
+
 
 // add DI services
 builder.Services.AddScoped<IDatabase<Npgsql.NpgsqlConnection, Npgsql.NpgsqlTransaction>>(provider => 

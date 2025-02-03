@@ -31,18 +31,20 @@ RUN dotnet publish "./KDG.Boilerplate.Server.csproj" -c $BUILD_CONFIGURATION -o 
 FROM base AS production
 WORKDIR /app
 COPY --from=publish /app/publish .
+# Force HTTPS in production
+ENV ASPNETCORE_URLS=https://+:5261
+EXPOSE 5261
 ENTRYPOINT ["dotnet", "KDG.Boilerplate.Server.dll"]
-
 FROM build AS local
 WORKDIR "/src/KDG.Boilerplate.Server"
 RUN mkdir -p /root/.aspnet/https/ && \
     dotnet dev-certs https -ep /root/.aspnet/https/aspnetapp.pfx -p password && \
     dotnet dev-certs https --trust
 
-# Set environment variables for the certificate
+ENV ASPNETCORE_URLS=http://+:5260;https://+:5261
 ENV ASPNETCORE_Kestrel__Certificates__Default__Password=password
 ENV ASPNETCORE_Kestrel__Certificates__Default__Path=/root/.aspnet/https/aspnetapp.pfx
 ENV ASPNETCORE_ENVIRONMENT=Development
 
-EXPOSE 5260
+EXPOSE 5260 5261
 ENTRYPOINT ["dotnet","watch","run"]

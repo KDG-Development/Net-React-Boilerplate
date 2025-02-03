@@ -15,9 +15,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "kdg-react": "^1.34.1",
+    "@azure/msal-browser": "^4.0.1",
+    "@azure/msal-react": "^3.0.1",
+    "kdg-react": "^1.34.3",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "sass-embedded": "^1.83.4"
   },
   "devDependencies": {
     "@types/node": "^18.19.1",

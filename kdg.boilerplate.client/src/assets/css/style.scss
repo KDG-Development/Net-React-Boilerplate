@@ -1,0 +1,13 @@
+// Components
+@use 'partials/components/template' as *;
+
+
+#root {
+    min-height: 100vh;
+    // display: flex;
+}
+
+// base layout styles
+.main-wrapper {
+    margin-left: 65px;
+}

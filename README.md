@@ -17,7 +17,12 @@ In order to build a new project using the boilerplate code, follow the instructi
 
 # Running with Docker
 
-1. Run `docker compose up --build`
+1. Ensure you have an appsettings.development.json in the root directory
+2. Run `docker compose up --build` to build the containers
+3. Run `docker compose up` to start the (already built) containers
+4. Run `docker compose down` to stop the containers
+5. Run `docker compose down --v` to stop and remove the containers and volumes
+
 
 # Creating a Project Based on Boilerplate
 

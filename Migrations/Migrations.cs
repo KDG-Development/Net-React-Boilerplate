@@ -3,12 +3,12 @@ using Microsoft.Extensions.Configuration;
 
 IConfiguration config =
     new ConfigurationBuilder()
-    // .AddJsonFile("appsettings.json") // example only
-    .AddJsonFile("appsettings.development.json")
+    // .AddJsonFile("../appsettings.json") // example only
+    .AddJsonFile("/src/appsettings.development.json")
     .Build();
 
 
-var connectionString = config.GetSection("ConnectionString").Value;
+var connectionString = config.GetSection("ConnectionStrings:DefaultConnection").Value;
 
 if (connectionString == null){
     throw new Exception("connection string missing for migrations");

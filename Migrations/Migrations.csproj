@@ -13,8 +13,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="appsettings.development.json">
+    <Content Include="../appsettings.development.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>appsettings.development.json</Link>
     </Content>
   </ItemGroup>
 

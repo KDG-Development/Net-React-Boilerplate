@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import './index.css'
+import './assets/css/style.scss'
 import { AuthContextProvider } from './context/AuthContext.tsx'
 import { NotificationProvider } from 'kdg-react'
 import { AppRouter } from './routing/AppRouter.tsx'

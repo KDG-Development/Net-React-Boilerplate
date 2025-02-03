@@ -10,6 +10,7 @@
     <SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
     <SpaProxyServerUrl>https://localhost:5173</SpaProxyServerUrl>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AspNetCoreUrls>http://0.0.0.0:5260;https://0.0.0.0:5261</AspNetCoreUrls>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,9 +37,9 @@
   </RestoreSources>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="KDG-Net-Common" Version="0.0.1" />
+    <PackageReference Include="KDG-Net-Common" Version="0.0.3" />
     <PackageReference Include="KDG-Net-Migrations" Version="0.0.1" />
-    <PackageReference Include="KDG-Net-Database" Version="0.0.3" />
+    <PackageReference Include="KDG-Net-Database" Version="0.0.5" />
     <PackageReference Include="KDG-Net-Cron" Version="0.0.1" />
     <PackageReference Include="KDG-Net-Connector" Version="0.0.1" />
     <PackageReference Include="KDG-Net-Zoho-Creator" Version="0.0.1" />
