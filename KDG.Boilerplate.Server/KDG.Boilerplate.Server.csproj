@@ -51,5 +51,11 @@
     <Exec Command="dotnet run --project ../Migrations/Migrations.csproj" />
   </Target>
 
+  <ItemGroup>
+    <Content Include="../appsettings.json" Link="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
 

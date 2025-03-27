@@ -1,3 +1,4 @@
+using System.Reflection;
 using KDG.Boilerplate.Services;
 using KDG.Database.Interfaces;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -7,6 +8,11 @@ using Microsoft.Net.Http.Headers;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+var assemblyLocation = Assembly.GetExecutingAssembly().Location;
+var basePath = Path.GetDirectoryName(assemblyLocation) ?? AppContext.BaseDirectory;
+builder.Configuration
+  .SetBasePath(basePath)
+  .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
 // Add services to the container.
 
@@ -28,72 +34,44 @@ builder.Services.AddScoped<IAuthService>(provider => new AuthService(
     builder.Configuration["Jwt:Audience"] ?? throw new Exception("JWT Audience not configured")
 ));
 
-// builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-//     .AddJwtBearer(options =>
-//     {
-//         options.TokenValidationParameters = new TokenValidationParameters
-//         {
-//             ValidateIssuer = true,
-//             ValidateAudience = true,
-//             ValidateLifetime = true,
-//             ValidateIssuerSigningKey = true,
-//             ValidIssuer = builder.Configuration["Jwt:Issuer"],
-//             ValidAudience = builder.Configuration["Jwt:Audience"],
-//             IssuerSigningKey = new SymmetricSecurityKey(
-//                 Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new Exception("JWT Key not configured")))
-//         };
-//     });
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new Exception("JWT Key not configured")))
+        };
+    });
 
-builder.Services.AddAuthentication(options =>
+builder.Services.AddCors(options =>
 {
-  // TODO use consts
-  options.DefaultScheme = "JWT_OR_COOKIE";
-  options.DefaultChallengeScheme = "JWT_OR_COOKIE";
-})
-.AddCookie(
-  CookieAuthenticationDefaults.AuthenticationScheme,
-  options =>
-  {
-    options.LoginPath = "/login";
-    options.ExpireTimeSpan = AuthService.TokenExpirationSpan();
-    options.Cookie.Name = "auth_token_key"; // TODO use constant?
-  }
-).AddJwtBearer(
-  JwtBearerDefaults.AuthenticationScheme,
-  options =>
-  {
-    options.TokenValidationParameters =
-      new TokenValidationParameters()
-      {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new Exception("JWT Key not configured")))
-      };
-  }
-)
-.AddPolicyScheme("JWT_OR_COOKIE", "JWT_OR_COOKIE", options =>
-{
-  options.ForwardDefaultSelector = context =>
-  {
-    // filter by auth type, jwt first
-    string? authorization = context.Request.Headers[HeaderNames.Authorization];
-    if (!string.IsNullOrEmpty(authorization) && authorization.StartsWith(JwtBearerDefaults.AuthenticationScheme))
-      return JwtBearerDefaults.AuthenticationScheme;
-
-    // otherwise always check for cookie auth
-    return CookieAuthenticationDefaults.AuthenticationScheme;
-  };
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins(builder.Configuration["BaseUrl"] ?? throw new Exception("BaseUrl not configured"))
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
 });
-  
-// ConfigureAuthentication(builder);
-
 
 var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment()) {
+    app.UseSwagger();
+    app.UseSwaggerUI();
+    app.UseDeveloperExceptionPage();
+} else {
+    app.UseExceptionHandler("/Error");
+    app.UseHsts();
+}
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
