@@ -1,39 +1,50 @@
 services:
   webapp:
+    container_name: kdg-boilerplate-webapp
     build:
       context: .
       dockerfile: Dockerfile
       target: local
       args:
-        - BUILD_CONFIGURATION=Development
+        - BUILD_CONFIGURATION=${ENVIRONMENT:-Development}
         # Uncomment if using CoreUI Pro
         # - NPM_TOKEN=${NPM_TOKEN}
     ports:
-      - "5173:5173"
-      - "5001:5001"
-      - "5260:5260"
+      - "5173:5173"  # Frontend Vite
+      - "5261:5261"  # Backend HTTPS
     volumes:
       - ./kdg.boilerplate.client:/src/kdg.boilerplate.client
       - ./KDG.Boilerplate.Server:/src/KDG.Boilerplate.Server
+      - ./appsettings.${ENVIRONMENT:-Development}.json:/src/appsettings.json:ro
+      # Add these to prevent sync of build artifacts
+      - /src/KDG.Boilerplate.Server/bin/
+      - /src/KDG.Boilerplate.Server/obj/
+      - /src/KDG.Validation/bin/
+      - /src/KDG.Validation/obj/
+      - /src/kdg.boilerplate.client/node_modules/
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:5260
+      - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT:-Development}
+      - ASPNETCORE_URLS=https://+:5261
+      - DOTNET_WATCH_RESTART_ON_RUDE_EDIT=1
     depends_on:
-      - db
+      db:
+        condition: service_started
+    tty: true
+    stdin_open: true
 
   db:
     image: postgres:16
-    container_name: db
+    container_name: kdg-boilerplate-db
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=db
+      - POSTGRES_DB=kdg-boilerplate-db
     ports:
-      - "5432:5432"
+      - "5442:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_kdg-boilerplate:/var/lib/postgresql/data
 
 volumes:
-  postgres_data:
+  postgres_data_kdg-boilerplate:
       # Add any other environment variables your app needs
     # Optional health check

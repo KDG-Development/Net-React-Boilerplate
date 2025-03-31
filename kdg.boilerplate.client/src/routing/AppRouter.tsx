@@ -28,6 +28,12 @@ export const AppRouter = () => {
         login({
             id:'example-id',
             jwt:'example-jwt',
+            user:{
+              id:'example-id',
+              email:'example@example.com',
+              permissionGroups:['example-permission-group'],
+              permissions:['example-permission'],
+            }
         })
       }
     } catch (e) {

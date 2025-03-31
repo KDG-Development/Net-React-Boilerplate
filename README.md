@@ -4,20 +4,28 @@ Follow the instructions under "Getting Started" to develop features directly app
 
 In order to build a new project using the boilerplate code, follow the instructions under "Creating a Project Based on Boilerplate".
 
+# Prerequisites
+
+1. Install Docker Desktop
+
 # Getting Started
 
 1. Fork or clone the boilerplate repository to your machine
 2. If cloned, rename the remote with `git remote rename origin boilerplate`
-3. Ensure you have an appropriate `appsettings.development.json`, which matches the default apsettings file present in both `KDG.Boilerplate.Server` and `Migrations`.
-4. Manage and execute migrations `cd Migrations && dotnet run`
-5. Run the app via CLI with `cd KDG.Boilerplate.Server && dotnet watch run`
-> This will install all required server and client dependencies
+3. Ensure you have an appropriate `appsettings.development.json`, which matches the default appsettings.json at the root of the project
+4. Start docker desktop and build the project with `docker compose up --build` or run `docker compose up` to start the project without building
 
-2. Your browser should open automatically, otherwise. If it doesn't, manucally navigate to https://localhost:5173
+> Your browser should open automatically, otherwise. If it doesn't, manually navigate to https://localhost:5173
 
-# Running with Docker
+## Configuring the Azure Deployment Pipeline
 
-1. Run `docker compose up --build`
+1. Create the container registry in azure portal for your environment
+2. Create a service connection in azure devops of type docker container registry
+3. Create a service connection in azure devops of type azure resource manager
+4. Rename the azure-pipelines-example.yml file to azure-pipelines.[environment].yml
+5. Update the azure-pipelines.[environment].yml file with the appropriate variable values, and values enclosed in square brackets
+6. Create a pipeline in azure devops with the azure-pipelines.[environment].yml file
+7. Ensure you have Continuous deployment enabled in the azure portal for your web app
 
 # Additional Notes
 If you need to stop the application, you can use the following command:
