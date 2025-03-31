@@ -47,7 +47,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.10" />
   </ItemGroup>
 
-  <Target Name="RunMigrationsApp" BeforeTargets="Build">
+  <Target Name="RunMigrationsApp" BeforeTargets="Build" Condition="'$(RUN_MIGRATIONS)' != 'false'">
     <Exec Command="dotnet run --project ../Migrations/Migrations.csproj" />
   </Target>
 
