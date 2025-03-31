@@ -59,6 +59,7 @@ stages:
         tags: |
           $(tag)
           latest
+        arguments: '--target final'
 
     # Get Azure DevOps agent IP
     - task: Bash@3
