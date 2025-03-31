@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  unit-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+      args:
+        - BUILD_CONFIGURATION=Development
+    volumes:
+      - ./kdg.boilerplate.client:/src/kdg.boilerplate.client
+      - ./KDG.Boilerplate.Server:/src/KDG.Boilerplate.Server
+      - ./KDG.Boilerplate.Server.Tests:/src/KDG.Boilerplate.Server.Tests
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5260

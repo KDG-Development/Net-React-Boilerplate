@@ -19,6 +19,22 @@ In order to build a new project using the boilerplate code, follow the instructi
 
 1. Run `docker compose up --build`
 
+# Additional Notes
+If you need to stop the application, you can use the following command:
+
+```bash
+docker compose down ; docker compose -f docker-compose.unit-test.yml down
+```
+
+# Running Unit Tests
+To run the unit tests with Docker Compose, you can use the following command:
+
+```bash
+docker compose -f docker-compose.unit-test.yml up --build
+```
+
+This will run a different stage of the Dockerfile that runs the unit tests, then exit.
+
 # Creating a Project Based on Boilerplate
 
 1. Initialize project repository

@@ -33,6 +33,12 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "KDG.Boilerplate.Server.dll"]
 
+FROM build AS test
+WORKDIR "/src/KDG.Boilerplate.Server.Tests"
+RUN dotnet restore
+COPY . .
+ENTRYPOINT ["dotnet", "test"]
+
 FROM build AS local
 WORKDIR "/src/KDG.Boilerplate.Server"
 RUN mkdir -p /root/.aspnet/https/ && \
