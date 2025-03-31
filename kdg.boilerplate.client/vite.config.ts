@@ -16,6 +16,11 @@ const certificateName = "kdg.boilerplate.client";
 const certFilePath = path.join(baseFolder, `${certificateName}.pem`);
 const keyFilePath = path.join(baseFolder, `${certificateName}.key`);
 
+// Ensure the certificate directory exists with appropriate permissions
+if (!fs.existsSync(baseFolder)) {
+    fs.mkdirSync(baseFolder, { recursive: true, mode: 0o700 }); // Only owner can read/write/execute
+}
+
 if (!fs.existsSync(certFilePath) || !fs.existsSync(keyFilePath)) {
     if (0 !== child_process.spawnSync('dotnet', [
         'dev-certs',
@@ -28,10 +33,14 @@ if (!fs.existsSync(certFilePath) || !fs.existsSync(keyFilePath)) {
     ], { stdio: 'inherit', }).status) {
         throw new Error("Could not create certificate.");
     }
+    
+    // Set appropriate permissions for certificate files
+    fs.chmodSync(certFilePath, 0o600); // Only owner can read/write
+    fs.chmodSync(keyFilePath, 0o600);  // Only owner can read/write
 }
 
-const target = env.ASPNETCORE_HTTPS_PORT ? `https://localhost:${env.ASPNETCORE_HTTPS_PORT}` :
-    env.ASPNETCORE_URLS ? env.ASPNETCORE_URLS.split(';')[0] : 'https://localhost:7027';
+const target = env.ASPNETCORE_HTTPS_PORT ? `https://0.0.0.0:${env.ASPNETCORE_HTTPS_PORT}` :
+    env.ASPNETCORE_URLS ? env.ASPNETCORE_URLS.split(';')[0] : 'https://0.0.0.0:7027';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -43,7 +52,7 @@ export default defineConfig({
     },
     server: {
         proxy: {
-            '^/weatherforecast': {
+            '^/api': {
                 target,
                 secure: false
             },
@@ -53,9 +62,21 @@ export default defineConfig({
             }
         },
         port: 5173,
+        host: true,
+
         https: {
             key: fs.readFileSync(keyFilePath),
             cert: fs.readFileSync(certFilePath),
+        },
+        watch: {
+            usePolling: true,
+        }
+    },
+    css: {
+        preprocessorOptions: {
+            scss: {
+                api: 'modern'
+            }
         }
     }
 })

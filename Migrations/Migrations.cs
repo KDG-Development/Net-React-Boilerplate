@@ -1,12 +1,15 @@
 using KDG.Migrations;
 using Microsoft.Extensions.Configuration;
+using System.Reflection;
+
+var assemblyLocation = Assembly.GetExecutingAssembly().Location;
+var basePath = Path.GetDirectoryName(assemblyLocation) ?? AppContext.BaseDirectory;
 
 IConfiguration config =
     new ConfigurationBuilder()
-    // .AddJsonFile("appsettings.json") // example only
-    .AddJsonFile("appsettings.development.json")
+    .SetBasePath(basePath)
+    .AddJsonFile("appsettings.json", optional: false)
     .Build();
-
 
 var connectionString = config.GetSection("ConnectionString").Value;
 

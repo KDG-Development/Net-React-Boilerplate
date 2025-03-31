@@ -1,0 +1,148 @@
+trigger:
+  - [YOUR-TRIGGER-BRANCH]
+
+variables:
+
+  dockerRegistryServiceConnection: '[YOUR-DOCKER-REGISTRY-SERVICE-CONNECTION]' # the name of the service connection in azure devops
+  azureResourceServiceConnection: '[YOUR-AZURE-RESOURCE-SERVICE-CONNECTION]' # the name of the service connection in azure devops
+  resourceGroupName: '[YOUR-RESOURCE-GROUP-NAME]' # the name of the resource group in azure
+  postgresServerName: '[YOUR-POSTGRES-SERVER-NAME]' # the name of the postgres server in azure
+  imageRepository: '[YOUR-IMAGE-REPOSITORY]' # the name of the image repository in azure
+  environment: '[YOUR-ENVIRONMENT]' # the environment to deploy to, used to parse the appsettings.${environment}.json file
+
+  tag: 'latest'
+  vmImageName: 'ubuntu-latest'
+
+stages:
+- stage: Build
+  jobs:
+  - job: Build
+    pool:
+      vmImage: '$(vmImageName)'
+    variables:
+      MIGRATION_SUCCESS: false
+    steps:
+    # Download environment-specific settings files
+    - task: DownloadSecureFile@1
+      displayName: 'Download appsettings'
+      name: appSettings
+      inputs:
+        secureFile: 'appsettings.${environment}.json'
+
+
+    # Copy config files to build context
+    - task: CopyFiles@2
+      displayName: 'Copy appsettings'
+      inputs:
+        sourceFolder: '$(Agent.TempDirectory)'
+        contents: |
+          appsettings.${environment}.json
+        targetFolder: '$(Build.SourcesDirectory)'
+        overWrite: true
+
+    # Rename config files to their expected names
+    - task: Bash@3
+      displayName: 'Rename appsettings'
+      inputs:
+        targetType: 'inline'
+        script: |
+          mv $(Build.SourcesDirectory)/appsettings.${environment}.json $(Build.SourcesDirectory)/appsettings.json
+
+    # Build the image with the production target stage
+    - task: Docker@2
+      displayName: 'Build Docker Image for Production'
+      inputs:
+        command: build
+        repository: $(imageRepository)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        buildContext: $(Build.SourcesDirectory)
+        tags: |
+          $(tag)
+          latest
+
+    # Get Azure DevOps agent IP
+    - task: Bash@3
+      displayName: 'Get agent IP'
+      name: GetAgentIP
+      inputs:
+        targetType: 'inline'
+        script: |
+          AGENT_IP=$(curl -s https://api.ipify.org)
+          echo "##vso[task.setvariable variable=AGENT_IP;isOutput=true]$AGENT_IP"
+
+    # Whitelist Azure DevOps agent IP in PostgreSQL Flexible Server
+    - task: AzureCLI@2
+      displayName: 'Create firewall rule'
+      name: CreateFirewallRule
+      inputs:
+        azureSubscription: '$(azureResourceServiceConnection)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az postgres flexible-server firewall-rule create \
+            --resource-group $(resourceGroupName) \
+            --name $(postgresServerName) \
+            --rule-name "AzureDevOps-$(Build.BuildId)" \
+            --start-ip-address $(GetAgentIP.AGENT_IP) \
+            --end-ip-address $(GetAgentIP.AGENT_IP)
+          
+          # Store the exit code to verify rule was created
+          RULE_CREATE_EXIT=$?
+          if [ $RULE_CREATE_EXIT -ne 0 ]; then
+            echo "Failed to create firewall rule"
+            exit $RULE_CREATE_EXIT
+          fi
+
+    # Run database migrations
+    - task: AzureCLI@2
+      displayName: 'Run migrations'
+      name: RunMigrations
+      inputs:
+        azureSubscription: '$(azureResourceServiceConnection)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          # Run migrations and capture both output and exit code
+          OUTPUT=$(dotnet run --project Migrations/Migrations.csproj --configuration Release 2>&1)
+          MIGRATION_EXIT=$?
+          
+          # Echo the output for logging
+          echo "$OUTPUT"
+          
+          # Check for exceptions in output (case-insensitive)
+          if echo "$OUTPUT" | grep -qi "exception" || [ $MIGRATION_EXIT -ne 0 ]; then
+            echo "##vso[task.setvariable variable=MIGRATION_SUCCESS]false"
+            echo "##vso[task.logissue type=error]Migration failed with output: $OUTPUT"
+            exit 1
+          else
+            echo "##vso[task.setvariable variable=MIGRATION_SUCCESS]true"
+            echo "Migrations completed successfully"
+            exit 0
+          fi
+
+    # Always clean up firewall rule
+    - task: AzureCLI@2
+      displayName: 'Remove firewall rule'
+      condition: always()
+      inputs:
+        azureSubscription: '$(azureResourceServiceConnection)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az postgres flexible-server firewall-rule delete \
+            --resource-group $(resourceGroupName) \
+            --name $(postgresServerName) \
+            --rule-name "AzureDevOps-$(Build.BuildId)" \
+            --yes
+
+    # Push the built image to the registry - only runs if migrations succeeded
+    - task: Docker@2
+      displayName: 'Push Docker Image to Registry'
+      condition: and(succeeded(), eq(variables['MIGRATION_SUCCESS'], 'true'))
+      inputs:
+        command: push
+        repository: $(imageRepository)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
+          latest
