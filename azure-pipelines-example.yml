@@ -16,6 +16,19 @@ variables:
 stages:
 - stage: Build
   jobs:
+  - job: UnitTests
+    displayName: 'Run Unit Tests'
+    pool:
+      vmImage: '$(vmImageName)'
+    steps:
+    - task: DotNetCoreCLI@2
+      displayName: 'Run Unit Tests'
+      inputs:
+        command: 'test'
+        projects: '**/*.Tests.csproj'
+        arguments: '--collect "Code Coverage" --settings "./coverage.runsettings"'
+        publishTestResults: true
+        publishCodeCoverage: true
   - job: Build
     pool:
       vmImage: '$(vmImageName)'

@@ -32,6 +32,11 @@ In order to build a new project using the boilerplate code, follow the instructi
 1. Run `docker compose up --profile app --build` to start the application
 2. Run `docker compose up --profile test --build` to perform unit tests
 
+# Running via scripts (Windows)
+
+1. Run `scripts\app.cmd` to start the application
+2. Run `scripts\tests.cmd` to perform unit tests
+
 # Additional Notes
 If you need to stop the application, you can use the following command:
 
