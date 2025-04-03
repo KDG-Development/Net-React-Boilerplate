@@ -1,5 +1,6 @@
 services:
   webapp:
+    profiles: ["app"]
     container_name: kdg-boilerplate-webapp
     build:
       context: .
@@ -33,6 +34,7 @@ services:
     stdin_open: true
 
   db:
+    profiles: ["app"]
     image: postgres:16
     container_name: kdg-boilerplate-db
     environment:
@@ -43,6 +45,23 @@ services:
       - "5442:5432"
     volumes:
       - postgres_data_kdg-boilerplate:/var/lib/postgresql/data
+
+  unit-test:
+    profiles: ["test"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+      args:
+        - BUILD_CONFIGURATION=Development
+    volumes:
+      - ./kdg.boilerplate.client:/src/kdg.boilerplate.client
+      - ./KDG.Boilerplate.Server:/src/KDG.Boilerplate.Server
+      - ./KDG.Boilerplate.Server.Tests:/src/KDG.Boilerplate.Server.Tests
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5260
+      - RUN_MIGRATIONS=false
 
 volumes:
   postgres_data_kdg-boilerplate:
