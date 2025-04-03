@@ -34,7 +34,6 @@ builder.Services.AddScoped<IAuthService>(provider => new AuthService(
     builder.Configuration["Jwt:Audience"] ?? throw new Exception("JWT Audience not configured")
 ));
 
-builder.Services.AddScoped<IExampleService, ExampleService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

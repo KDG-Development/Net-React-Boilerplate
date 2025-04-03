@@ -61,9 +61,20 @@ public class Permission : TypeFilterAttribute
         string? expiration = AuthService.TryFindClaimValue(context.HttpContext.User.Claims, "exp");
         if (expiration != null)
         {
-          if (DateTime.UnixEpoch.AddSeconds(Convert.ToDouble(expiration)) < DateTime.Now)
+          try
           {
+            var expirationTime = DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt64(expiration)).UtcDateTime;
+            if (expirationTime < DateTime.UtcNow)
+            {
+              context.Result = new UnauthorizedResult();
+              return; // Return early after setting UnauthorizedResult
+            }
+          }
+          catch (Exception)
+          {
+            // If there's an error parsing the expiration, treat it as expired
             context.Result = new UnauthorizedResult();
+            return;
           }
         }
         UserBase? deserialized = JsonConvert.DeserializeObject<UserBase>(_user);

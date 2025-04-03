@@ -2,6 +2,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using KDG.UserManagement.Interfaces;
+using KDG.UserManagement.Models;
+using KDG.Boilerplate.Server.Models.Users;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 
@@ -78,7 +80,8 @@ public class AuthService : IAuthService
 
             var jwtToken = (JwtSecurityToken)validatedToken;
             var userJson = jwtToken.Claims.First(x => x.Type == UserClaimKey).Value;
-            return JsonConvert.DeserializeObject<IUserBase>(userJson);
+            var user = JsonConvert.DeserializeObject<User>(userJson);
+            return user;
         }
         catch
         {
