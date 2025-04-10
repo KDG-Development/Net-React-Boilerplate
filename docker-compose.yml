@@ -1,4 +1,21 @@
 services:
+    migrations:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: build
+      args:
+        - BUILD_CONFIGURATION=${ENVIRONMENT:-Development}
+    volumes:
+      - ./Migrations:/src/Migrations
+      - ./appsettings.${ENVIRONMENT:-Development}.json:/src/appsettings.json:ro
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT:-Development}
+    command: dotnet run --project /src/Migrations/Migrations.csproj
+    depends_on:
+      db:
+        condition: service_started
   webapp:
     profiles: ["app"]
     container_name: kdg-boilerplate-webapp
@@ -8,8 +25,6 @@ services:
       target: local
       args:
         - BUILD_CONFIGURATION=${ENVIRONMENT:-Development}
-        # Uncomment if using CoreUI Pro
-        # - NPM_TOKEN=${NPM_TOKEN}
     ports:
       - "5173:5173"  # Frontend Vite
       - "5261:5261"  # Backend HTTPS
@@ -29,7 +44,7 @@ services:
       - DOTNET_WATCH_RESTART_ON_RUDE_EDIT=1
     depends_on:
       db:
-        condition: service_started
+        condition: service_completed_successfully
     tty: true
     stdin_open: true
 
