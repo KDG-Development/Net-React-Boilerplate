@@ -27,6 +27,23 @@ In order to build a new project using the boilerplate code, follow the instructi
 6. Create a pipeline in azure devops with the azure-pipelines.[environment].yml file
 7. Ensure you have Continuous deployment enabled in the azure portal for your web app
 
+# Running with Docker
+
+1. Run `docker compose --profile app up --build` to start the application
+2. Run `docker compose --profile test up --build` to perform unit tests
+
+# Running via scripts (Windows)
+
+1. Run `scripts\app.cmd` to start the application
+2. Run `scripts\tests.cmd` to perform unit tests
+
+# Additional Notes
+If you need to stop the application, you can use the following command:
+
+```bash
+docker compose down
+```
+
 # Creating a Project Based on Boilerplate
 
 1. Initialize project repository

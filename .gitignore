@@ -4,6 +4,9 @@
 # Development tools
 DevTools/**
 
+# Test results
+KDG.Boilerplate.Server.Tests/TestResults
+
 # Server ignore
 bin
 obj

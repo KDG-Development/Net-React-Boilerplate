@@ -44,6 +44,12 @@ ENV ASPNETCORE_URLS=http://+:5261
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENTRYPOINT ["dotnet", "KDG.Boilerplate.Server.dll"]
 
+FROM build AS test
+WORKDIR "/src/KDG.Boilerplate.Server.Tests"
+RUN dotnet restore
+COPY . .
+ENTRYPOINT ["dotnet", "test"]
+
 FROM build AS local
 WORKDIR "/src/KDG.Boilerplate.Server"
 RUN mkdir -p /root/.aspnet/https/ && \
