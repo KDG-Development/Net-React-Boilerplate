@@ -1,5 +1,5 @@
 services:
-    migrations:
+  migrations:
     profiles: ["app"]
     build:
       context: .
@@ -16,6 +16,7 @@ services:
     depends_on:
       db:
         condition: service_started
+
   webapp:
     container_name: kdg-boilerplate-webapp
     build:
@@ -43,7 +44,7 @@ services:
       - DOTNET_WATCH_RESTART_ON_RUDE_EDIT=1
     depends_on:
       db:
-        condition: service_completed_successfully
+        condition: service_started
     tty: true
     stdin_open: true
 
@@ -61,5 +62,3 @@ services:
 
 volumes:
   postgres_data_kdg-boilerplate:
-      # Add any other environment variables your app needs
-    # Optional health check
