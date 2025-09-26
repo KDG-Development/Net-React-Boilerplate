@@ -6,6 +6,7 @@ variables:
   dockerRegistryServiceConnection: '[YOUR-DOCKER-REGISTRY-SERVICE-CONNECTION]' # the name of the service connection in azure devops
   azureResourceServiceConnection: '[YOUR-AZURE-RESOURCE-SERVICE-CONNECTION]' # the name of the service connection in azure devops
   resourceGroupName: '[YOUR-RESOURCE-GROUP-NAME]' # the name of the resource group in azure
+  webAppName: '[YOUR-WEBAPP-NAME]' # the name of the Azure Web App for Containers
   postgresServerName: '[YOUR-POSTGRES-SERVER-NAME]' # the name of the postgres server in azure
   imageRepository: '[YOUR-IMAGE-REPOSITORY]' # the name of the image repository in azure
   environment: '[YOUR-ENVIRONMENT]' # the environment to deploy to, used to parse the appsettings.${environment}.json file
@@ -19,8 +20,6 @@ stages:
   - job: Build
     pool:
       vmImage: '$(vmImageName)'
-    variables:
-      MIGRATION_SUCCESS: false
     steps:
     # Download environment-specific settings files
     - task: DownloadSecureFile@1
@@ -59,7 +58,7 @@ stages:
         tags: |
           $(tag)
           latest
-        arguments: '--target final'
+        arguments: '--target final-apm'
 
     # Get Azure DevOps agent IP
     - task: Bash@3
@@ -95,31 +94,12 @@ stages:
           fi
 
     # Run database migrations
-    - task: AzureCLI@2
+    - task: DotNetCoreCLI@2
       displayName: 'Run migrations'
-      name: RunMigrations
       inputs:
-        azureSubscription: '$(azureResourceServiceConnection)'
-        scriptType: 'bash'
-        scriptLocation: 'inlineScript'
-        inlineScript: |
-          # Run migrations and capture both output and exit code
-          OUTPUT=$(dotnet run --project Migrations/Migrations.csproj --configuration Release 2>&1)
-          MIGRATION_EXIT=$?
-          
-          # Echo the output for logging
-          echo "$OUTPUT"
-          
-          # Check for exceptions in output (case-insensitive)
-          if echo "$OUTPUT" | grep -qi "exception" || [ $MIGRATION_EXIT -ne 0 ]; then
-            echo "##vso[task.setvariable variable=MIGRATION_SUCCESS]false"
-            echo "##vso[task.logissue type=error]Migration failed with output: $OUTPUT"
-            exit 1
-          else
-            echo "##vso[task.setvariable variable=MIGRATION_SUCCESS]true"
-            echo "Migrations completed successfully"
-            exit 0
-          fi
+        command: 'run'
+        projects: 'Migrations/Migrations.csproj'
+        arguments: '--configuration Release'
 
     # Always clean up firewall rule
     - task: AzureCLI@2
@@ -136,10 +116,10 @@ stages:
             --rule-name "AzureDevOps-$(Build.BuildId)" \
             --yes
 
-    # Push the built image to the registry - only runs if migrations succeeded
+    # Push the built image to the registry
     - task: Docker@2
       displayName: 'Push Docker Image to Registry'
-      condition: and(succeeded(), eq(variables['MIGRATION_SUCCESS'], 'true'))
+      condition: succeeded()
       inputs:
         command: push
         repository: $(imageRepository)
@@ -147,3 +127,68 @@ stages:
         tags: |
           $(tag)
           latest
+
+    # Download environment-specific .env from Secure Files
+    - task: DownloadSecureFile@1
+      displayName: 'Download .env for $(environment)'
+      name: envFile
+      condition: succeeded()
+      inputs:
+        secureFile: '.env.$(environment)'
+
+    # Copy .env.<environment> to build context
+    - task: CopyFiles@2
+      displayName: 'Copy .env to build context'
+      condition: succeeded()
+      inputs:
+        sourceFolder: '$(Agent.TempDirectory)'
+        contents: |
+          .env.$(environment)
+        targetFolder: '$(Build.SourcesDirectory)'
+        overWrite: true
+
+    # Rename .env.<environment> to .env
+    - task: Bash@3
+      displayName: 'Rename .env'
+      condition: succeeded()
+      inputs:
+        targetType: 'inline'
+        script: |
+          mv $(Build.SourcesDirectory)/.env.$(environment) $(Build.SourcesDirectory)/.env
+
+    # Apply .env as App Settings to Azure Web App
+    - task: AzureCLI@2
+      displayName: 'Apply .env to Azure Web App application settings'
+      condition: succeeded()
+      inputs:
+        azureSubscription: '$(azureResourceServiceConnection)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          set -euo pipefail
+          FILE="$(Build.SourcesDirectory)/.env"
+          if [ ! -f "$FILE" ]; then
+            echo "Env file not found: $FILE" >&2
+            exit 1
+          fi
+          declare -a SETTINGS
+          while IFS= read -r line || [ -n "$line" ]; do
+            # Skip comments and blank lines
+            if [ -z "$line" ] || [[ "$line" =~ ^# ]]; then
+              continue
+            fi
+            key="${line%%=*}"
+            value="${line#*=}"
+            # trim CR if present
+            value="${value%$'\r'}"
+            SETTINGS+=("${key}=${value}")
+          done < "$FILE"
+
+          # Always enforce Production for QA/Prod envs by including it in the env file.
+          # The .env should contain ASPNETCORE_ENVIRONMENT=Production when appropriate.
+
+          echo "Applying $((${#SETTINGS[@]})) settings to Web App $(webAppName) in RG $(resourceGroupName)"
+          az webapp config appsettings set \
+            --resource-group "$(resourceGroupName)" \
+            --name "$(webAppName)" \
+            --settings "${SETTINGS[@]}"

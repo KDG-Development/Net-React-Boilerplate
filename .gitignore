@@ -9,4 +9,5 @@ bin
 obj
 appsettings.development.json
 
-# Client ignore
+# secrets ignore
+.env*

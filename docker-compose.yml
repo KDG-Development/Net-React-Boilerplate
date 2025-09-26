@@ -19,6 +19,7 @@ services:
 
   webapp:
     container_name: kdg-boilerplate-webapp
+    profiles: ["app"]
     build:
       context: .
       dockerfile: Dockerfile
@@ -47,6 +48,30 @@ services:
         condition: service_started
     tty: true
     stdin_open: true
+
+  # This is for testing the APM agent locally
+  webapp-apm:
+    container_name: kdg-boilerplate-webapp-apm
+    profiles: ["apm"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: final-apm
+      args:
+        - BUILD_CONFIGURATION=${ENVIRONMENT:-Development}
+    ports:
+      - "5173:5261"  # HTTPS at localhost:5173
+      - "5261:5261"  # HTTPS at localhost:5261
+    volumes:
+      - ./appsettings.${ENVIRONMENT:-Development}.json:/app/appsettings.json:ro
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=https://+:5261
+      - S247_LICENSE_KEY=${S247_LICENSE_KEY}
+      - SITE24X7_APP_NAME=${SITE24X7_APP_NAME:-Boilerplate}
+    depends_on:
+      db:
+        condition: service_started
 
   db:
     image: postgres:16

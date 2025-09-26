@@ -23,4 +23,4 @@ KDG.Migrations.Migrations migration = new KDG.Migrations.Migrations(
         Path.Combine(AppContext.BaseDirectory, "scripts")
     )
 );
-migration.Migrate();
+return migration.Migrate();
