@@ -88,6 +88,14 @@ SITE24X7_APP_NAME=YourAppName
 - Agent config precedence: the image entrypoint removes any generated `apminsight.conf` on container start so `S247_LICENSE_KEY` and `SITE24X7_APP_NAME` from environment are always used.
 - License capacity: each running instance consumes an APM license. If logs show `responseObj is null` or `response-code 702 (LicenseInstancesExceeded)`, free inactive monitors in Site24x7 or increase capacity, then restart and generate traffic.
 - Many inactive instances in the portal can come from repeated local runs. This is expected for testing and can be cleaned up in the Site24x7 UI.
+- Confirm license/app envs are present in the container:
+```
+docker compose exec webapp-apm sh -lc 'printenv | grep -E "S247|SITE24X7" || echo "No S247/SITE24X7 envs found"'
+```
+- Tail all agent logs if any exist:
+```
+docker compose exec webapp-apm sh -lc 'files=$(find "$CORECLR_SITE24X7_HOME" -type f -iname "*.log" 2>/dev/null); if [ -n "$files" ]; then echo "$files" && tail -n +1 -F $files; else echo "No agent log files found under $CORECLR_SITE24X7_HOME yet"; fi'
+```
 
 References:
 - Site24x7 .NET Core agent via NuGet: https://www.site24x7.com/help/apm/dotnet-agent/install-dot-net-core-agent-via-nuget.html
