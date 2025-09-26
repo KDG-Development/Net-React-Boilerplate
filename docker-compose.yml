@@ -56,7 +56,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: final-apm
+      target: final-apm-local
       args:
         - BUILD_CONFIGURATION=${ENVIRONMENT:-Development}
     ports:

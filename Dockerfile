@@ -76,17 +76,49 @@ ENV CORECLR_PROFILER_PATH_32="/opt/apminsight/dotnet/ApmInsightDotNetCoreAgent/x
 ENV DOTNET_STARTUP_HOOKS="/opt/apminsight/dotnet/ApmInsightDotNetCoreAgent/netstandard2.0/DotNetAgent.Loader.dll"
 ENV MANAGEENGINE_COMMUNICATION_MODE="direct"
 
-COPY --from=certs /root/.aspnet/https/aspnetapp.pfx /root/.aspnet/https/aspnetapp.pfx
-
-ENV ASPNETCORE_URLS=https://+:5261
-ENV ASPNETCORE_Kestrel__Certificates__Default__Password=password
-ENV ASPNETCORE_Kestrel__Certificates__Default__Path=/root/.aspnet/https/aspnetapp.pfx
+ENV ASPNETCORE_URLS=http://+:5261
 ENV ASPNETCORE_ENVIRONMENT=Production
 
 # Ensure agent always reads license from environment by removing any stale conf on start
 RUN printf '#!/bin/sh\nfind /opt/apminsight/dotnet/ApmInsightDotNetCoreAgent -type f -name apminsight.conf -delete\nexec dotnet KDG.Boilerplate.Server.dll\n' > /apm-entrypoint.sh && chmod +x /apm-entrypoint.sh
 
 ENTRYPOINT ["/apm-entrypoint.sh"]
+
+FROM base AS final-apm-local
+WORKDIR /app
+COPY --from=publish /app/publish .
+COPY --from=publish /src/appsettings*.json .
+COPY --from=publish /src/Migrations/scripts ./scripts
+
+# Install Site24x7 APM Insight .NET Core agent (Linux)
+RUN apt-get update && \
+    apt-get install -y wget ca-certificates unzip && \
+    wget https://staticdownloads.site24x7.com/apminsight/agents/dotnet/apminsight-dotnetcoreagent-linux.sh && \
+    chmod +x apminsight-dotnetcoreagent-linux.sh && \
+    ./apminsight-dotnetcoreagent-linux.sh -Destination "/opt/apminsight/dotnet" -LicenseKey "REPLACE_AT_RUNTIME" && \
+    rm apminsight-dotnetcoreagent-linux.sh && \
+    rm -rf /var/lib/apt/lists/*
+
+# Required env vars for the agent
+ENV CORECLR_ENABLE_PROFILING=1
+ENV CORECLR_PROFILER="{9D363A5F-ED5F-4AAC-B456-75AFFA6AA0C8}"
+ENV CORECLR_SITE24X7_HOME="/opt/apminsight/dotnet/ApmInsightDotNetCoreAgent"
+ENV CORECLR_PROFILER_PATH_64="/opt/apminsight/dotnet/ApmInsightDotNetCoreAgent/x64/libClrProfilerAgent.so"
+ENV CORECLR_PROFILER_PATH_32="/opt/apminsight/dotnet/ApmInsightDotNetCoreAgent/x86/libClrProfilerAgent.so"
+ENV DOTNET_STARTUP_HOOKS="/opt/apminsight/dotnet/ApmInsightDotNetCoreAgent/netstandard2.0/DotNetAgent.Loader.dll"
+ENV MANAGEENGINE_COMMUNICATION_MODE="direct"
+
+# Enable HTTPS for local APM testing using dev cert
+COPY --from=certs /root/.aspnet/https/aspnetapp.pfx /root/.aspnet/https/aspnetapp.pfx
+ENV ASPNETCORE_URLS=https://+:5261
+ENV ASPNETCORE_Kestrel__Certificates__Default__Password=password
+ENV ASPNETCORE_Kestrel__Certificates__Default__Path=/root/.aspnet/https/aspnetapp.pfx
+ENV ASPNETCORE_ENVIRONMENT=Production
+
+# Ensure agent always reads license from environment by removing any stale conf on start
+RUN printf '#!/bin/sh\nfind /opt/apminsight/dotnet/ApmInsightDotNetCoreAgent -type f -name apminsight.conf -delete\nexec dotnet KDG.Boilerplate.Server.dll\n' > /apm-entrypoint-apm-local.sh && chmod +x /apm-entrypoint-apm-local.sh
+
+ENTRYPOINT ["/apm-entrypoint-apm-local.sh"]
 
 FROM build AS local
 WORKDIR "/src/KDG.Boilerplate.Server"
