@@ -7,7 +7,7 @@ DevTools/**
 # Server ignore
 bin
 obj
-appsettings.development.json
+appsettings.*.json
 
 # secrets ignore
 .env*
