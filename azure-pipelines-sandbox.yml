@@ -1,0 +1,197 @@
+trigger:
+  - sandbox
+
+variables:
+
+  dockerRegistryServiceConnection: '[YOUR-DOCKER-REGISTRY-SERVICE-CONNECTION]'
+  azureResourceServiceConnection: '[YOUR-AZURE-RESOURCE-SERVICE-CONNECTION]'
+  resourceGroupName: '[YOUR-RESOURCE-GROUP-NAME]'
+  webAppName: '[YOUR-SANDBOX-WEBAPP-NAME]'
+  postgresServerName: '[YOUR-POSTGRES-SERVER-NAME]'
+  imageRepository: '[YOUR-IMAGE-REPOSITORY]'
+  environment: 'sandbox'
+
+  tag: 'sandbox'
+  vmImageName: 'ubuntu-latest'
+
+stages:
+- stage: Build
+  jobs:
+  - job: Build
+    pool:
+      vmImage: '$(vmImageName)'
+    variables:
+      MIGRATION_SUCCESS: false
+    steps:
+    # Download environment-specific settings files
+    - task: DownloadSecureFile@1
+      displayName: 'Download appsettings'
+      name: appSettings
+      inputs:
+        secureFile: 'appsettings.${environment}.json'
+
+    # Copy config files to build context
+    - task: CopyFiles@2
+      displayName: 'Copy appsettings'
+      inputs:
+        sourceFolder: '$(Agent.TempDirectory)'
+        contents: |
+          appsettings.${environment}.json
+        targetFolder: '$(Build.SourcesDirectory)'
+        overWrite: true
+
+    # Rename config files to their expected names
+    - task: Bash@3
+      displayName: 'Rename appsettings'
+      inputs:
+        targetType: 'inline'
+        script: |
+          mv $(Build.SourcesDirectory)/appsettings.${environment}.json $(Build.SourcesDirectory)/appsettings.json
+
+    # Build the image with the APM-enabled target stage
+    - task: Docker@2
+      displayName: 'Build Docker Image (sandbox)'
+      inputs:
+        command: build
+        repository: $(imageRepository)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        buildContext: $(Build.SourcesDirectory)
+        tags: |
+          $(tag)
+        arguments: '--target final-apm'
+
+    # Get Azure DevOps agent IP
+    - task: Bash@3
+      displayName: 'Get agent IP'
+      name: GetAgentIP
+      inputs:
+        targetType: 'inline'
+        script: |
+          AGENT_IP=$(curl -s https://api.ipify.org)
+          echo "##vso[task.setvariable variable=AGENT_IP;isOutput=true]$AGENT_IP"
+
+    # Whitelist Azure DevOps agent IP in PostgreSQL Flexible Server
+    - task: AzureCLI@2
+      displayName: 'Create firewall rule'
+      name: CreateFirewallRule
+      inputs:
+        azureSubscription: '$(azureResourceServiceConnection)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az postgres flexible-server firewall-rule create \
+            --resource-group $(resourceGroupName) \
+            --name $(postgresServerName) \
+            --rule-name "AzureDevOps-$(Build.BuildId)" \
+            --start-ip-address $(GetAgentIP.AGENT_IP) \
+            --end-ip-address $(GetAgentIP.AGENT_IP)
+          exit $?
+
+    # Run database migrations
+    - task: AzureCLI@2
+      displayName: 'Run migrations'
+      name: RunMigrations
+      inputs:
+        azureSubscription: '$(azureResourceServiceConnection)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          OUTPUT=$(dotnet run --project Migrations/Migrations.csproj --configuration Release 2>&1)
+          MIGRATION_EXIT=$?
+          echo "$OUTPUT"
+          if echo "$OUTPUT" | grep -qi "exception" || [ $MIGRATION_EXIT -ne 0 ]; then
+            echo "##vso[task.setvariable variable=MIGRATION_SUCCESS]false"
+            echo "##vso[task.logissue type=error]Migration failed with output: $OUTPUT"
+            exit 1
+          else
+            echo "##vso[task.setvariable variable=MIGRATION_SUCCESS]true"
+            echo "Migrations completed successfully"
+            exit 0
+          fi
+
+    # Always clean up firewall rule
+    - task: AzureCLI@2
+      displayName: 'Remove firewall rule'
+      condition: always()
+      inputs:
+        azureSubscription: '$(azureResourceServiceConnection)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az postgres flexible-server firewall-rule delete \
+            --resource-group $(resourceGroupName) \
+            --name $(postgresServerName) \
+            --rule-name "AzureDevOps-$(Build.BuildId)" \
+            --yes
+
+    # Push the built image to the registry - only runs if migrations succeeded
+    - task: Docker@2
+      displayName: 'Push Docker Image (sandbox)'
+      condition: and(succeeded(), eq(variables['MIGRATION_SUCCESS'], 'true'))
+      inputs:
+        command: push
+        repository: $(imageRepository)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
+
+    # Download environment-specific .env from Secure Files
+    - task: DownloadSecureFile@1
+      displayName: 'Download .env for $(environment)'
+      name: envFile
+      condition: succeeded()
+      inputs:
+        secureFile: '.env.$(environment)'
+
+    # Copy .env.<environment> to build context
+    - task: CopyFiles@2
+      displayName: 'Copy .env to build context'
+      condition: succeeded()
+      inputs:
+        sourceFolder: '$(Agent.TempDirectory)'
+        contents: |
+          .env.$(environment)
+        targetFolder: '$(Build.SourcesDirectory)'
+        overWrite: true
+
+    # Rename .env.<environment> to .env
+    - task: Bash@3
+      displayName: 'Rename .env'
+      condition: succeeded()
+      inputs:
+        targetType: 'inline'
+        script: |
+          mv $(Build.SourcesDirectory)/.env.$(environment) $(Build.SourcesDirectory)/.env
+
+    # Apply .env as App Settings to Azure Web App
+    - task: AzureCLI@2
+      displayName: 'Apply .env to Azure Web App application settings'
+      condition: succeeded()
+      inputs:
+        azureSubscription: '$(azureResourceServiceConnection)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          set -euo pipefail
+          FILE="$(Build.SourcesDirectory)/.env"
+          if [ ! -f "$FILE" ]; then
+            echo "Env file not found: $FILE" >&2
+            exit 1
+          fi
+          declare -a SETTINGS
+          while IFS= read -r line || [ -n "$line" ]; do
+            if [ -z "$line" ] || [[ "$line" =~ ^# ]]; then
+              continue
+            fi
+            key="${line%%=*}"
+            value="${line#*=}"
+            value="${value%$'\r'}"
+            SETTINGS+=("${key}=${value}")
+          done < "$FILE"
+
+          echo "Applying $((${#SETTINGS[@]})) settings to Web App $(webAppName) in RG $(resourceGroupName)"
+          az webapp config appsettings set \
+            --resource-group "$(resourceGroupName)" \
+            --name "$(webAppName)" \
+            --settings "${SETTINGS[@]}"
+
