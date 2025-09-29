@@ -89,7 +89,7 @@ public class CalculatorService : ICalculatorService
                     result += request.Numbers.Sum();
                     break;
                 case "product":
-                    result = request.Numbers.Aggregate(1.0, (acc, x) => acc * x);
+                    result *= request.Numbers.Aggregate(1.0, (acc, x) => acc * x);
                     break;
                 default:
                     return 0;
