@@ -7,12 +7,23 @@ parameters:
     type: string
     default: qa
     values: [ qa, prod ]
+  - name: projectName
+    type: string
+    default: kdg-boilerplate
+  - name: location
+    type: string
+    default: eastus
 
 variables:
+  # Update the group names below to match your Library → Variable groups names
+  - ${{ if eq(parameters.environment, 'qa') }}:
+    - group: qa-infra-vars
+  - ${{ if eq(parameters.environment, 'prod') }}:
+    - group: prod-infra-vars
   - name: ProjectName
-    value: kdg-boilerplate
+    value: ${{ parameters.projectName }}
   - name: Location
-    value: eastus
+    value: ${{ parameters.location }}
 
 stages:
   - stage: Infra

@@ -38,16 +38,45 @@ docker compose --profile app up --build
 
 ## Configuring the Azure Deployment Pipeline
 
-1. Create the container registry in azure portal for your environment
-2. Create a service connection in azure devops of type docker container registry
-3. Create a service connection in azure devops of type azure resource manager
-4. Create an Azure DevOps variable group with `TFSTATE_RG`, `TFSTATE_ACCOUNT`, `TFSTATE_CONTAINER`, `PostgresAdminPassword`, and `AzureServiceConnection` (required for the infra pipeline)
-5. Use `azure-pipelines-infra.yml` to provision QA/Prod. It will set App Service application settings to Key Vault references so QA/Prod never carry secrets in files or the repo.
-6. Local development must use only local files (`appsettings.development.json` and client `.env`). Do not pull QA/Prod secrets into local files.
-4. Rename the azure-pipelines-example.yml file to azure-pipelines.[environment].yml
-5. Update the azure-pipelines.[environment].yml file with the appropriate variable values, and values enclosed in square brackets
-6. Create a pipeline in azure devops with the azure-pipelines.[environment].yml file
-7. Ensure you have Continuous deployment enabled in the azure portal for your web app
+Infra setup (required)
+1. Create service connections in Azure DevOps:
+   - Docker Registry: connection to your Azure Container Registry
+   - Azure Resource Manager (ARM): name it like `sc-arm-<project>` (e.g., `sc-arm-kdg-boilerplate`)
+2. Create two variable groups (Pipelines → Library → Variable groups):
+   - `qa-infra-vars`
+   - `prod-infra-vars`
+   Add these variables to each (mark the password as secret):
+     - `TFSTATE_RG` = `rg-<project>-tfstate` (e.g., `rg-kdg-boilerplate-tfstate`)
+     - `TFSTATE_ACCOUNT` = globally unique SA name, lowercase 3–24 chars (e.g., `stkdgboilertf38219`)
+     - `TFSTATE_CONTAINER` = `tfstate`
+     - `PostgresAdminPassword` = a strong password (secret)
+     - `AzureServiceConnection` = your ARM service connection name (e.g., `sc-arm-kdg-boilerplate`)
+   - Do NOT check “Link secrets from an Azure key vault as variables”. Key Vault is provisioned by Terraform and used at runtime in QA/Prod.
+3. Create a pipeline from `azure-pipelines-infra.yml`. The YAML already links the groups conditionally by environment and exposes parameters for project and location. Ensure your group names match or update the YAML:
+   ```yaml
+   variables:
+     - ${{ if eq(parameters.environment, 'qa') }}:
+       - group: qa-infra-vars
+     - ${{ if eq(parameters.environment, 'prod') }}:
+       - group: prod-infra-vars
+     - name: ProjectName
+       value: ${{ parameters.projectName }}
+     - name: Location
+       value: ${{ parameters.location }}
+   ```
+   Run-time parameters (with defaults): `environment=qa|prod`, `projectName=kdg-boilerplate`, `location=eastus`. On first run you may be prompted to Authorize the variable group usage.
+4. Run the infra pipeline twice, once per environment:
+   - `environment=qa`
+   - `environment=prod`
+   This provisions isolated infra per env and configures the Web App to read secrets from Key Vault via app settings (no secrets in files or repo).
+5. Verify infra:
+   - Web Apps are running
+   - Key Vault contains env-specific secrets (e.g., `postgres-connection-string-qa`, `jwt-key-qa`)
+
+Application pipeline and local usage
+1. Use `azure-pipelines-example.yml` as a base for your application build/deploy. Update variables and service connection names accordingly.
+2. Local development uses only local files: `appsettings.development.json` and client `.env`. Do not pull QA/Prod secrets into local files.
+3. QA/Prod rely on App Service application settings with Key Vault references applied by the infra pipeline.
 
 ## Site24x7 APM Integration
 
