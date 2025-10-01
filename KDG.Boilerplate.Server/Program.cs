@@ -12,7 +12,9 @@ var assemblyLocation = Assembly.GetExecutingAssembly().Location;
 var basePath = Path.GetDirectoryName(assemblyLocation) ?? AppContext.BaseDirectory;
 builder.Configuration
   .SetBasePath(basePath)
-  .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+  .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+  .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+  .AddEnvironmentVariables();
 
 // Add services to the container.
 

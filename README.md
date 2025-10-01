@@ -41,6 +41,9 @@ docker compose --profile app up --build
 1. Create the container registry in azure portal for your environment
 2. Create a service connection in azure devops of type docker container registry
 3. Create a service connection in azure devops of type azure resource manager
+4. Create an Azure DevOps variable group with `TFSTATE_RG`, `TFSTATE_ACCOUNT`, `TFSTATE_CONTAINER`, `PostgresAdminPassword`, and `AzureServiceConnection` (required for the infra pipeline)
+5. Use `azure-pipelines-infra.yml` to provision QA/Prod. It will set App Service application settings to Key Vault references so QA/Prod never carry secrets in files or the repo.
+6. Local development must use only local files (`appsettings.development.json` and client `.env`). Do not pull QA/Prod secrets into local files.
 4. Rename the azure-pipelines-example.yml file to azure-pipelines.[environment].yml
 5. Update the azure-pipelines.[environment].yml file with the appropriate variable values, and values enclosed in square brackets
 6. Create a pipeline in azure devops with the azure-pipelines.[environment].yml file

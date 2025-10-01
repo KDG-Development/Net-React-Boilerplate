@@ -1,0 +1,87 @@
+trigger:
+  branches:
+    include: [ main, qa, prod ]
+
+parameters:
+  - name: environment
+    type: string
+    default: qa
+    values: [ qa, prod ]
+
+variables:
+  - name: ProjectName
+    value: kdg-boilerplate
+  - name: Location
+    value: eastus
+
+stages:
+  - stage: Infra
+    displayName: Provision Infrastructure
+    jobs:
+      - job: Terraform
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: TerraformInstaller@1
+            inputs:
+              terraformVersion: '1.7.5'
+
+          - script: |
+              set -e
+              cat > backend.hcl <<EOF
+              resource_group_name  = "$(TFSTATE_RG)"
+              storage_account_name = "$(TFSTATE_ACCOUNT)"
+              container_name       = "$(TFSTATE_CONTAINER)"
+              key                  = "$(ProjectName)-${{ parameters.environment }}.tfstate"
+              EOF
+            displayName: Create backend.hcl
+
+          - task: AzureCLI@2
+            displayName: Terraform init/plan/apply
+            inputs:
+              azureSubscription: '$(AzureServiceConnection)'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                cd infra/env
+                terraform init -backend-config=../backend.hcl
+                terraform plan \
+                  -var project_name=$(ProjectName) \
+                  -var environment=${{ parameters.environment }} \
+                  -var location=$(Location) \
+                  -var postgres_admin_password=$(PostgresAdminPassword) \
+                  -out=tfplan
+                terraform apply -auto-approve tfplan
+                terraform output -json > ../../tf-output.json
+
+          - task: AzureCLI@2
+            displayName: Apply Key Vault references to App Service
+            inputs:
+              azureSubscription: '$(AzureServiceConnection)'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                KV_NAME=$(jq -r .kv.value.name < tf-output.json)
+                RG=$(jq -r .webapp.value.rg < tf-output.json)
+                WEBAPP=$(jq -r .webapp.value.name < tf-output.json)
+                ENV='${{ parameters.environment }}'
+
+                conn_uri=$(az keyvault secret show --vault-name "$KV_NAME" --name postgres-connection-string-$ENV --query id -o tsv)
+                jwt_uri=$(az keyvault secret show --vault-name "$KV_NAME" --name jwt-key-$ENV --query id -o tsv)
+                issuer=$(az keyvault secret show --vault-name "$KV_NAME" --name jwt-issuer-$ENV --query value -o tsv)
+                audience=$(az keyvault secret show --vault-name "$KV_NAME" --name jwt-audience-$ENV --query value -o tsv)
+                base_url=$(az keyvault secret show --vault-name "$KV_NAME" --name app-base-url-$ENV --query value -o tsv)
+
+                az webapp config appsettings set \
+                  --resource-group "$RG" \
+                  --name "$WEBAPP" \
+                  --settings \
+                  ConnectionString="@Microsoft.KeyVault(SecretUri=$conn_uri)" \
+                  Jwt:Key="@Microsoft.KeyVault(SecretUri=$jwt_uri)" \
+                  Jwt:Issuer="$issuer" \
+                  Jwt:Audience="$audience" \
+                  BaseUrl="$base_url"
+
+
