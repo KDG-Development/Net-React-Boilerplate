@@ -21,7 +21,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
-    <PackageReference Include="KDG-Net-Migrations" Version="0.0.1" />
+    <PackageReference Include="KDG-Net-Migrations" Version="0.0.2" />
   </ItemGroup>
 
 </Project>
