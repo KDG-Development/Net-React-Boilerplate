@@ -44,8 +44,7 @@ stages:
               storage_account_name = "$(TFSTATE_ACCOUNT)"
               container_name       = "$(TFSTATE_CONTAINER)"
               key                  = "$(ProjectName)-${{ parameters.environment }}.tfstate"
-              use_cli              = false
-              use_azuread_auth     = true
+              use_oidc             = true
               EOF
             displayName: Create backend.hcl
 
@@ -59,11 +58,12 @@ stages:
               inlineScript: |
                 set -euo pipefail
                 
-                # Export Service Principal credentials as Terraform environment variables
+                # Export OIDC authentication variables for Terraform
                 export ARM_CLIENT_ID=$servicePrincipalId
-                export ARM_CLIENT_SECRET=$servicePrincipalKey
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+                export ARM_USE_OIDC=true
+                export ARM_OIDC_TOKEN=$idToken
                 
                 cd infra/env
                 terraform init -backend-config=../../backend.hcl

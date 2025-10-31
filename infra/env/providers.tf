@@ -15,9 +15,9 @@ terraform {
 provider "azurerm" {
   features {}
   
-  # Use Service Principal authentication from environment variables
+  # Use OIDC authentication (Workload Identity Federation)
   # Set by Azure DevOps AzureCLI task with addSpnToEnvironment: true
-  use_cli = false
+  use_oidc = true
 }
 
 
