@@ -29,10 +29,18 @@ resource "azurerm_key_vault" "this" {
   sku_name                   = "standard"
   purge_protection_enabled   = true
   soft_delete_retention_days = 7
+  enable_rbac_authorization  = true
   tags                       = local.tags
 }
 
 data "azurerm_client_config" "current" {}
+
+# Grant the service principal (running Terraform) permission to manage secrets
+resource "azurerm_role_assignment" "terraform_kv_admin" {
+  scope                = azurerm_key_vault.this.id
+  role_definition_name = "Key Vault Secrets Officer"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
 
 resource "azurerm_container_registry" "this" {
   name                = replace("acr${local.name}${random_string.suffix.result}", "-", "")
@@ -109,6 +117,8 @@ resource "azurerm_key_vault_secret" "jwt_key" {
   name         = "jwt-key-${var.environment}"
   value        = random_string.suffix.result
   key_vault_id = azurerm_key_vault.this.id
+  
+  depends_on = [azurerm_role_assignment.terraform_kv_admin]
 }
 
 resource "azurerm_key_vault_secret" "pg_password" {

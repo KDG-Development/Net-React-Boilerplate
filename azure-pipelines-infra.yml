@@ -56,7 +56,7 @@ stages:
               inlineScript: |
                 set -euo pipefail
                 cd infra/env
-                terraform init -backend-config=../backend.hcl
+                terraform init -backend-config=../../backend.hcl
                 terraform plan \
                   -var project_name=$(ProjectName) \
                   -var environment=${{ parameters.environment }} \
