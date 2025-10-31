@@ -44,6 +44,7 @@ stages:
               storage_account_name = "$(TFSTATE_ACCOUNT)"
               container_name       = "$(TFSTATE_CONTAINER)"
               key                  = "$(ProjectName)-${{ parameters.environment }}.tfstate"
+              use_azuread_auth     = true
               EOF
             displayName: Create backend.hcl
 
