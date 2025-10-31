@@ -38,45 +38,259 @@ docker compose --profile app up --build
 
 ## Configuring the Azure Deployment Pipeline
 
-Infra setup (required)
-1. Create service connections in Azure DevOps:
-   - Docker Registry: connection to your Azure Container Registry
-   - Azure Resource Manager (ARM): name it like `sc-arm-<project>` (e.g., `sc-arm-kdg-boilerplate`)
-2. Create two variable groups (Pipelines → Library → Variable groups):
-   - `qa-infra-vars`
-   - `prod-infra-vars`
-   Add these variables to each (mark the password as secret):
-     - `TFSTATE_RG` = `rg-<project>-tfstate` (e.g., `rg-kdg-boilerplate-tfstate`)
-     - `TFSTATE_ACCOUNT` = globally unique SA name, lowercase 3–24 chars (e.g., `stkdgboilertf38219`)
-     - `TFSTATE_CONTAINER` = `tfstate`
-     - `PostgresAdminPassword` = a strong password (secret)
-     - `AzureServiceConnection` = your ARM service connection name (e.g., `sc-arm-kdg-boilerplate`)
-   - Do NOT check “Link secrets from an Azure key vault as variables”. Key Vault is provisioned by Terraform and used at runtime in QA/Prod.
-3. Create a pipeline from `azure-pipelines-infra.yml`. The YAML already links the groups conditionally by environment and exposes parameters for project and location. Ensure your group names match or update the YAML:
-   ```yaml
-   variables:
-     - ${{ if eq(parameters.environment, 'qa') }}:
-       - group: qa-infra-vars
-     - ${{ if eq(parameters.environment, 'prod') }}:
-       - group: prod-infra-vars
-     - name: ProjectName
-       value: ${{ parameters.projectName }}
-     - name: Location
-       value: ${{ parameters.location }}
-   ```
-   Run-time parameters (with defaults): `environment=qa|prod`, `projectName=kdg-boilerplate`, `location=eastus`. On first run you may be prompted to Authorize the variable group usage.
-4. Run the infra pipeline twice, once per environment:
-   - `environment=qa`
-   - `environment=prod`
-   This provisions isolated infra per env and configures the Web App to read secrets from Key Vault via app settings (no secrets in files or repo).
-5. Verify infra:
-   - Web Apps are running
-   - Key Vault contains env-specific secrets (e.g., `postgres-connection-string-qa`, `jwt-key-qa`)
+This section guides you through setting up automated infrastructure provisioning and application deployment to Azure using Terraform and Azure DevOps Pipelines.
 
-Application pipeline and local usage
-1. Use `azure-pipelines-example.yml` as a base for your application build/deploy. Update variables and service connection names accordingly.
-2. Local development uses only local files: `appsettings.development.json` and client `.env`. Do not pull QA/Prod secrets into local files.
-3. QA/Prod rely on App Service application settings with Key Vault references applied by the infra pipeline.
+### Prerequisites
+
+Before you begin, ensure you have:
+- An active Azure subscription
+- Azure DevOps organization and project
+- Owner or User Access Administrator role on the Azure subscription (for one-time setup)
+- Azure CLI installed locally (for manual setup steps)
+
+### Architecture Overview
+
+The infrastructure pipeline provisions:
+- **Azure Key Vault** (with RBAC) for secure secret storage
+- **Azure Container Registry** for Docker images
+- **PostgreSQL Flexible Server** for database
+- **Azure App Service** (Linux) for hosting the application
+- **Managed Identities** for secure Key Vault access
+- **Terraform State Storage** (auto-created on first run)
+
+All secrets are stored in Key Vault and referenced by App Service via managed identity - no secrets in code or configuration files.
+
+---
+
+### Step 1: Create Azure Service Connection
+
+1. In Azure DevOps, go to **Project Settings** → **Service connections**
+2. Click **New service connection** → **Azure Resource Manager** → **Next**
+3. Select **Workload Identity federation (automatic)**
+4. Choose your subscription
+5. Leave resource group empty (subscription-level access)
+6. Name it: `sc-arm-<project>` (e.g., `sc-arm-kdg-boilerplate`)
+7. Grant access permission to all pipelines (or configure per-pipeline)
+8. Click **Save**
+
+**Note**: The service connection uses Workload Identity Federation (OIDC), which is more secure than client secrets.
+
+---
+
+### Step 2: Grant Service Principal Permissions (One-Time Setup)
+
+The service principal needs specific Azure RBAC roles to provision infrastructure and manage secrets. Run these commands once:
+
+```bash
+# Login to Azure
+az login
+
+# Get your service principal Object ID from Azure DevOps service connection details
+# Replace with your actual Object ID and Subscription ID
+SP_OBJECT_ID="<your-sp-object-id>"
+SUBSCRIPTION_ID="<your-subscription-id>"
+
+# Grant Contributor role (to create and manage resources)
+az role assignment create \
+  --assignee-object-id $SP_OBJECT_ID \
+  --assignee-principal-type ServicePrincipal \
+  --role "Contributor" \
+  --scope "/subscriptions/$SUBSCRIPTION_ID"
+
+# Grant Key Vault Secrets Officer role (to manage Key Vault secrets)
+az role assignment create \
+  --assignee-object-id $SP_OBJECT_ID \
+  --assignee-principal-type ServicePrincipal \
+  --role "Key Vault Secrets Officer" \
+  --scope "/subscriptions/$SUBSCRIPTION_ID"
+```
+
+**Why these roles?**
+- **Contributor**: Creates/manages resource groups, storage accounts, databases, app services, etc.
+- **Key Vault Secrets Officer**: Creates and manages secrets in Key Vault (Terraform needs this)
+
+---
+
+### Step 3: Create Azure DevOps Variable Groups
+
+Create two variable groups (one for QA, one for Prod) with environment-specific configuration:
+
+1. In Azure DevOps, go to **Pipelines** → **Library** → **+ Variable group**
+2. Create `qa-infra-vars` with these variables:
+
+| Variable Name | Value | Secret? | Description |
+|---------------|-------|---------|-------------|
+| `TFSTATE_RG` | `rg-<project>-tfstate` | No | Resource group for Terraform state storage |
+| `TFSTATE_ACCOUNT` | `<uniquename>` | No | Storage account name (3-24 lowercase chars/numbers, globally unique) |
+| `TFSTATE_CONTAINER` | `tfstate` | No | Container name for state files |
+| `PostgresAdminPassword` | `<strong-password>` | **Yes** | PostgreSQL admin password |
+| `AzureServiceConnection` | `sc-arm-<project>` | No | Your service connection name |
+
+3. Repeat for `prod-infra-vars` (use same variable names, different values for prod)
+
+**Important Notes:**
+- Storage account names must be **globally unique** across all of Azure
+- Storage account names can only contain **lowercase letters and numbers** (no hyphens or underscores)
+- Examples: `kdgboilerplatetfstate`, `mycompanytfstate123`
+- Do NOT check "Link secrets from an Azure key vault" - we provision Key Vault via Terraform
+
+---
+
+### Step 4: Create Infrastructure Pipeline
+
+1. In Azure DevOps, go to **Pipelines** → **New pipeline**
+2. Select your repository
+3. Choose **Existing Azure Pipelines YAML file**
+4. Select `azure-pipelines-infra.yml`
+5. Click **Save** (don't run yet)
+
+On first run, you may be prompted to:
+- Authorize the variable group usage
+- Approve the pipeline to use the service connection
+
+---
+
+### Step 5: Run the Infrastructure Pipeline
+
+The pipeline has the following parameters:
+
+| Parameter | Default | Options | Description |
+|-----------|---------|---------|-------------|
+| `environment` | `qa` | `qa`, `prod` | Target environment |
+| `projectName` | `kdg-boilerplate` | Any string | Project name (used in resource naming) |
+| `location` | `eastus` | Azure region | Azure region for resources |
+
+**First Run (QA Environment):**
+1. Click **Run pipeline**
+2. Set `environment` = `qa`
+3. Verify other parameters
+4. Click **Run**
+
+**What happens on first run:**
+- Creates Terraform state storage (resource group, storage account, container)
+- Grants service principal access to state storage
+- Provisions all infrastructure via Terraform:
+  - Resource group: `rg-kdg-boilerplate-qa`
+  - Key Vault: `kv-kdg-boilerplate-qa-xxxxx`
+  - Container Registry: `acrkdgboilerplateqaxxxxx`
+  - PostgreSQL Server: `pg-kdg-boilerplate-qa-xxxxx`
+  - PostgreSQL Database: `kdg_boilerplate_db`
+  - App Service Plan: `asp-kdg-boilerplate-qa`
+  - App Service: `app-kdg-boilerplate-qa`
+  - 6 Key Vault secrets (JWT keys, connection strings, etc.)
+- Grants webapp managed identity access to Key Vault
+- Configures App Service with Key Vault references
+
+**Expected duration:** 5-10 minutes
+
+**Second Run (Prod Environment):**
+1. Click **Run pipeline** again
+2. Set `environment` = `prod`
+3. Click **Run**
+
+This creates isolated production infrastructure with separate resources and secrets.
+
+---
+
+### Step 6: Verify Infrastructure
+
+After successful pipeline runs, verify in Azure Portal:
+
+**QA Environment:**
+- Resource Group: `rg-kdg-boilerplate-qa` exists
+- Key Vault: Contains secrets named `*-qa` (e.g., `postgres-connection-string-qa`, `jwt-key-qa`)
+- App Service: Shows "Your web app is running and waiting for your content"
+- PostgreSQL: Server is running and has database `kdg_boilerplate_db`
+
+**Prod Environment:**
+- Resource Group: `rg-kdg-boilerplate-prod` exists
+- Similar resources with `-prod` naming
+
+**Configuration in App Service:**
+- Go to App Service → **Configuration** → **Application settings**
+- Verify settings reference Key Vault (shown as green with key icon):
+  - `ConnectionString` = `@Microsoft.KeyVault(SecretUri=...)`
+  - `Jwt__Key` = `@Microsoft.KeyVault(SecretUri=...)`
+  - `Jwt__Issuer` = actual value (not in Key Vault)
+  - `Jwt__Audience` = actual value (not in Key Vault)
+  - `BaseUrl` = App Service URL
+
+---
+
+### Pipeline Behavior on Subsequent Runs
+
+The infrastructure pipeline is **idempotent** - safe to run multiple times:
+
+| Step | First Run | Subsequent Runs |
+|------|-----------|-----------------|
+| Bootstrap State Storage | Creates storage infrastructure | Skips (already exists) |
+| Terraform Init | Downloads providers | Uses existing state |
+| Terraform Plan | Plans 15+ resource creations | Shows "No changes" if code unchanged |
+| Terraform Apply | Creates all resources | Only applies changes if code modified |
+| Grant Key Vault Access | Grants webapp access | Skips (already exists) |
+| App Service Config | Applies settings | Reapplies (causes brief restart) |
+
+**When to re-run:**
+- After modifying Terraform code (e.g., changing SKUs, adding resources)
+- After Key Vault secrets expire or need rotation
+- To ensure infrastructure matches code (drift detection)
+
+---
+
+### Application Pipeline and Local Usage
+
+1. **Application Deployment**: Use `azure-pipelines-example.yml` as a base for building and deploying your application
+   - Update Docker registry connection
+   - Update web app names
+   - Configure environment-specific variables
+
+2. **Local Development**:
+   - Uses `appsettings.development.json` and client `.env` files
+   - Never pull QA/Prod secrets locally
+   - Run database migrations against local PostgreSQL in Docker
+
+3. **QA/Prod Environments**:
+   - App Service reads secrets from Key Vault via managed identity
+   - No secrets stored in application settings or environment variables directly
+   - Secrets automatically updated when Key Vault values change
+
+---
+
+### Troubleshooting
+
+**Storage account name invalid:**
+- Ensure name is 3-24 characters
+- Only lowercase letters and numbers (no hyphens, underscores, or uppercase)
+
+**Authorization errors:**
+- Verify service principal has Contributor + Key Vault Secrets Officer roles
+- Check role assignments in Azure Portal → Subscriptions → Access control (IAM)
+
+**Terraform backend initialization fails:**
+- Ensure TFSTATE_ACCOUNT variable matches actual storage account name
+- Verify service principal has "Storage Blob Data Contributor" role on storage account
+
+**PostgreSQL internal errors:**
+- May be transient Azure issue - re-run pipeline
+- Check Azure region capacity and quotas
+
+**Key Vault access denied:**
+- Verify webapp managed identity has "Key Vault Secrets User" role
+- Wait 2-3 minutes for role assignments to propagate
+
+**Pipeline parameter not showing:**
+- Edit pipeline → Click "..." → **Triggers** → **Variables** tab to verify parameters
+
+---
+
+### Security Best Practices
+
+✅ **Secrets in Key Vault only** - Never commit secrets to git  
+✅ **Managed identities** - No service principal keys in application code  
+✅ **RBAC authorization** - Key Vault uses Azure RBAC, not legacy access policies  
+✅ **Separate environments** - QA and Prod are completely isolated  
+✅ **Terraform state** - Stored securely in Azure Storage with RBAC  
+✅ **OIDC authentication** - Pipeline uses Workload Identity Federation (no long-lived secrets)
 
 ## Site24x7 APM Integration
 

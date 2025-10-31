@@ -152,11 +152,14 @@ stages:
                 KV_ID=$(jq -r .kv.value.id < tf-output.json)
                 RG=$(jq -r .webapp.value.rg < tf-output.json)
                 WEBAPP=$(jq -r .webapp.value.name < tf-output.json)
+                ACR_NAME=$(jq -r .acr.value.name < tf-output.json)
+                ACR_LOGIN_SERVER=$(jq -r .acr.value.login_server < tf-output.json)
                 ENV='${{ parameters.environment }}'
                 
                 echo "Key Vault: $KV_NAME"
                 echo "Resource Group: $RG"
                 echo "Web App: $WEBAPP"
+                echo "Container Registry: $ACR_NAME ($ACR_LOGIN_SERVER)"
                 
                 # Get webapp managed identity principal ID
                 echo "Getting webapp managed identity..."
@@ -191,7 +194,16 @@ stages:
                     "Jwt__Key=@Microsoft.KeyVault(SecretUri=$jwt_uri)" \
                     "Jwt__Issuer=$issuer" \
                     "Jwt__Audience=$audience" \
-                    "BaseUrl=$base_url"
+                    "BaseUrl=$base_url" \
+                    "DOCKER_REGISTRY_SERVER_URL=https://$ACR_LOGIN_SERVER" \
+                    "DOCKER_ENABLE_CI=true" \
+                    "WEBSITES_PORT=8080"
+                
+                echo "Configuring ACR authentication with managed identity..."
+                az webapp config set \
+                  --resource-group "$RG" \
+                  --name "$WEBAPP" \
+                  --generic-configurations '{"acrUseManagedIdentityCreds": true}'
                 
                 echo "App Service configuration complete!"
 

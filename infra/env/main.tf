@@ -44,6 +44,13 @@ resource "azurerm_container_registry" "this" {
   tags                = local.tags
 }
 
+# Grant webapp managed identity permission to pull images from ACR
+resource "azurerm_role_assignment" "webapp_acr_pull" {
+  scope                = azurerm_container_registry.this.id
+  role_definition_name = "AcrPull"
+  principal_id         = azurerm_linux_web_app.this.identity[0].principal_id
+}
+
 resource "azurerm_postgresql_flexible_server" "this" {
   name                   = "pg-${local.name}-${random_string.suffix.result}"
   resource_group_name    = azurerm_resource_group.this.name
@@ -99,12 +106,16 @@ resource "azurerm_linux_web_app" "this" {
   site_config {
     always_on = true
     application_stack {
-      dotnet_version = "8.0"
+      docker_registry_url      = "https://${azurerm_container_registry.this.login_server}"
+      docker_image_name        = "${azurerm_container_registry.this.login_server}/${var.project_name}:latest"
+      docker_registry_username = azurerm_container_registry.this.login_server
     }
   }
 
   app_settings = {
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
+    DOCKER_ENABLE_CI                     = "true"
+    WEBSITES_PORT                        = "8080"
   }
 }
 
@@ -156,6 +167,14 @@ output "webapp" {
     name     = azurerm_linux_web_app.this.name
     hostname = azurerm_linux_web_app.this.default_hostname
     rg       = azurerm_resource_group.this.name
+  }
+}
+
+output "acr" {
+  value = {
+    name         = azurerm_container_registry.this.name
+    login_server = azurerm_container_registry.this.login_server
+    id           = azurerm_container_registry.this.id
   }
 }
 
