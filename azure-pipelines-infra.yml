@@ -37,6 +37,71 @@ stages:
             inputs:
               terraformVersion: '1.7.5'
 
+          - task: AzureCLI@2
+            displayName: Bootstrap Terraform State Storage
+            inputs:
+              azureSubscription: '$(AzureServiceConnection)'
+              scriptType: bash
+              scriptLocation: inlineScript
+              addSpnToEnvironment: true
+              inlineScript: |
+                set -euo pipefail
+                
+                RG_NAME="$(TFSTATE_RG)"
+                STORAGE_ACCOUNT_NAME="$(TFSTATE_ACCOUNT)"
+                CONTAINER_NAME="$(TFSTATE_CONTAINER)"
+                LOCATION="eastus"
+                
+                echo "Checking if storage account exists..."
+                
+                # Check if resource group exists, create if not
+                if ! az group show --name "$RG_NAME" &>/dev/null; then
+                  echo "Creating resource group: $RG_NAME"
+                  az group create --name "$RG_NAME" --location "$LOCATION"
+                else
+                  echo "Resource group already exists: $RG_NAME"
+                fi
+                
+                # Check if storage account exists, create if not
+                if ! az storage account show --name "$STORAGE_ACCOUNT_NAME" --resource-group "$RG_NAME" &>/dev/null; then
+                  echo "Creating storage account: $STORAGE_ACCOUNT_NAME"
+                  az storage account create \
+                    --name "$STORAGE_ACCOUNT_NAME" \
+                    --resource-group "$RG_NAME" \
+                    --location "$LOCATION" \
+                    --sku Standard_LRS \
+                    --kind StorageV2 \
+                    --allow-blob-public-access false \
+                    --min-tls-version TLS1_2
+                  
+                  echo "Granting service principal access to storage account..."
+                  STORAGE_ACCOUNT_ID=$(az storage account show --name "$STORAGE_ACCOUNT_NAME" --resource-group "$RG_NAME" --query id -o tsv)
+                  az role assignment create \
+                    --assignee-object-id $servicePrincipalId \
+                    --assignee-principal-type ServicePrincipal \
+                    --role "Storage Blob Data Contributor" \
+                    --scope "$STORAGE_ACCOUNT_ID"
+                  
+                  # Wait a bit for role assignment to propagate
+                  echo "Waiting for role assignment to propagate..."
+                  sleep 15
+                else
+                  echo "Storage account already exists: $STORAGE_ACCOUNT_NAME"
+                fi
+                
+                # Check if container exists, create if not
+                if ! az storage container show --name "$CONTAINER_NAME" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode login &>/dev/null; then
+                  echo "Creating container: $CONTAINER_NAME"
+                  az storage container create \
+                    --name "$CONTAINER_NAME" \
+                    --account-name "$STORAGE_ACCOUNT_NAME" \
+                    --auth-mode login
+                else
+                  echo "Container already exists: $CONTAINER_NAME"
+                fi
+                
+                echo "Terraform state storage is ready!"
+
           - script: |
               set -e
               cat > backend.hcl <<EOF
