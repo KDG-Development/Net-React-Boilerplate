@@ -145,26 +145,54 @@ stages:
               scriptLocation: inlineScript
               addSpnToEnvironment: true
               inlineScript: |
-                set -euo pipefail
+                set -eo pipefail
+                
+                echo "Reading Terraform outputs..."
                 KV_NAME=$(jq -r .kv.value.name < tf-output.json)
+                KV_ID=$(jq -r .kv.value.id < tf-output.json)
                 RG=$(jq -r .webapp.value.rg < tf-output.json)
                 WEBAPP=$(jq -r .webapp.value.name < tf-output.json)
                 ENV='${{ parameters.environment }}'
-
-                conn_uri=$(az keyvault secret show --vault-name "$KV_NAME" --name postgres-connection-string-$ENV --query id -o tsv)
-                jwt_uri=$(az keyvault secret show --vault-name "$KV_NAME" --name jwt-key-$ENV --query id -o tsv)
-                issuer=$(az keyvault secret show --vault-name "$KV_NAME" --name jwt-issuer-$ENV --query value -o tsv)
-                audience=$(az keyvault secret show --vault-name "$KV_NAME" --name jwt-audience-$ENV --query value -o tsv)
-                base_url=$(az keyvault secret show --vault-name "$KV_NAME" --name app-base-url-$ENV --query value -o tsv)
-
+                
+                echo "Key Vault: $KV_NAME"
+                echo "Resource Group: $RG"
+                echo "Web App: $WEBAPP"
+                
+                # Get webapp managed identity principal ID
+                echo "Getting webapp managed identity..."
+                WEBAPP_PRINCIPAL_ID=$(az webapp identity show --resource-group "$RG" --name "$WEBAPP" --query principalId -o tsv)
+                echo "Webapp Principal ID: $WEBAPP_PRINCIPAL_ID"
+                
+                # Grant webapp access to Key Vault
+                echo "Granting webapp Key Vault Secrets User role..."
+                az role assignment create \
+                  --assignee-object-id "$WEBAPP_PRINCIPAL_ID" \
+                  --assignee-principal-type ServicePrincipal \
+                  --role "Key Vault Secrets User" \
+                  --scope "$KV_ID" 2>/dev/null || echo "Role assignment may already exist"
+                
+                echo "Waiting for permissions to propagate..."
+                sleep 15
+                
+                # Get secret URIs
+                echo "Getting Key Vault secret URIs..."
+                conn_uri=$(az keyvault secret show --vault-name "$KV_NAME" --name "postgres-connection-string-$ENV" --query id -o tsv)
+                jwt_uri=$(az keyvault secret show --vault-name "$KV_NAME" --name "jwt-key-$ENV" --query id -o tsv)
+                issuer=$(az keyvault secret show --vault-name "$KV_NAME" --name "jwt-issuer-$ENV" --query value -o tsv)
+                audience=$(az keyvault secret show --vault-name "$KV_NAME" --name "jwt-audience-$ENV" --query value -o tsv)
+                base_url=$(az keyvault secret show --vault-name "$KV_NAME" --name "app-base-url-$ENV" --query value -o tsv)
+                
+                echo "Configuring App Service settings..."
                 az webapp config appsettings set \
                   --resource-group "$RG" \
                   --name "$WEBAPP" \
                   --settings \
-                  ConnectionString="@Microsoft.KeyVault(SecretUri=$conn_uri)" \
-                  Jwt:Key="@Microsoft.KeyVault(SecretUri=$jwt_uri)" \
-                  Jwt:Issuer="$issuer" \
-                  Jwt:Audience="$audience" \
-                  BaseUrl="$base_url"
+                    "ConnectionString=@Microsoft.KeyVault(SecretUri=$conn_uri)" \
+                    "Jwt__Key=@Microsoft.KeyVault(SecretUri=$jwt_uri)" \
+                    "Jwt__Issuer=$issuer" \
+                    "Jwt__Audience=$audience" \
+                    "BaseUrl=$base_url"
+                
+                echo "App Service configuration complete!"
 
 
