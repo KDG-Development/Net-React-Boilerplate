@@ -74,17 +74,8 @@ stages:
                     --allow-blob-public-access false \
                     --min-tls-version TLS1_2
                   
-                  echo "Granting service principal access to storage account..."
-                  STORAGE_ACCOUNT_ID=$(az storage account show --name "$STORAGE_ACCOUNT_NAME" --resource-group "$RG_NAME" --query id -o tsv)
-                  az role assignment create \
-                    --assignee-object-id $servicePrincipalId \
-                    --assignee-principal-type ServicePrincipal \
-                    --role "Storage Blob Data Contributor" \
-                    --scope "$STORAGE_ACCOUNT_ID"
-                  
-                  # Wait a bit for role assignment to propagate
-                  echo "Waiting for role assignment to propagate..."
-                  sleep 15
+                  echo "Storage account created successfully!"
+                  echo "Note: Storage Blob Data Contributor role must be granted manually to service principal"
                 else
                   echo "Storage account already exists: $STORAGE_ACCOUNT_NAME"
                 fi
