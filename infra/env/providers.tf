@@ -14,6 +14,10 @@ terraform {
 
 provider "azurerm" {
   features {}
+  
+  # Use Service Principal authentication from environment variables
+  # Set by Azure DevOps AzureCLI task with addSpnToEnvironment: true
+  use_cli = false
 }
 
 

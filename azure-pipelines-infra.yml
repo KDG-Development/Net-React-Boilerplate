@@ -54,6 +54,7 @@ stages:
               azureSubscription: '$(AzureServiceConnection)'
               scriptType: bash
               scriptLocation: inlineScript
+              addSpnToEnvironment: true
               inlineScript: |
                 set -euo pipefail
                 cd infra/env
@@ -73,6 +74,7 @@ stages:
               azureSubscription: '$(AzureServiceConnection)'
               scriptType: bash
               scriptLocation: inlineScript
+              addSpnToEnvironment: true
               inlineScript: |
                 set -euo pipefail
                 KV_NAME=$(jq -r .kv.value.name < tf-output.json)
