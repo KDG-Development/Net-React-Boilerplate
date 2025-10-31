@@ -22,15 +22,15 @@ resource "azurerm_resource_group" "this" {
 }
 
 resource "azurerm_key_vault" "this" {
-  name                       = replace("kv-${local.name}-${random_string.suffix.result}", "_", "-")
-  resource_group_name        = azurerm_resource_group.this.name
-  location                   = azurerm_resource_group.this.location
-  tenant_id                  = data.azurerm_client_config.current.tenant_id
-  sku_name                   = "standard"
-  purge_protection_enabled   = true
-  soft_delete_retention_days = 7
-  enable_rbac_authorization  = true
-  tags                       = local.tags
+  name                        = substr(replace("kv-${local.name}-${random_string.suffix.result}", "_", "-"), 0, 24)
+  resource_group_name         = azurerm_resource_group.this.name
+  location                    = azurerm_resource_group.this.location
+  tenant_id                   = data.azurerm_client_config.current.tenant_id
+  sku_name                    = "standard"
+  purge_protection_enabled    = true
+  soft_delete_retention_days  = 7
+  rbac_authorization_enabled  = true
+  tags                        = local.tags
 }
 
 data "azurerm_client_config" "current" {}
@@ -60,6 +60,9 @@ resource "azurerm_postgresql_flexible_server" "this" {
   version                = "16"
   sku_name               = "B_Standard_B1ms"
   storage_mb             = 32768
+  backup_retention_days  = 7
+  
+  tags = local.tags
 }
 
 resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_azure" {
@@ -129,7 +132,7 @@ resource "azurerm_key_vault_secret" "pg_password" {
 
 resource "azurerm_key_vault_secret" "pg_connstr" {
   name         = "postgres-connection-string-${var.environment}"
-  value        = "Host=${azurerm_postgresql_flexible_server.this.fqdn};Port=5432;Database=${azurerm_postgresql_flexible_server_database.app.name};Username=${var.postgres_admin_username}@${azurerm_postgresql_flexible_server.this.name};Password=${var.postgres_admin_password}"
+  value        = "Host=${azurerm_postgresql_flexible_server.this.fqdn};Port=5432;Database=${azurerm_postgresql_flexible_server_database.app.name};Username=${var.postgres_admin_username};Password=${var.postgres_admin_password}"
   key_vault_id = azurerm_key_vault.this.id
 }
 
