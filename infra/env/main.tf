@@ -44,13 +44,6 @@ resource "azurerm_container_registry" "this" {
   tags                = local.tags
 }
 
-# Grant webapp managed identity permission to pull images from ACR
-resource "azurerm_role_assignment" "webapp_acr_pull" {
-  scope                = azurerm_container_registry.this.id
-  role_definition_name = "AcrPull"
-  principal_id         = azurerm_linux_web_app.this.identity[0].principal_id
-}
-
 resource "azurerm_postgresql_flexible_server" "this" {
   name                   = "pg-${local.name}-${random_string.suffix.result}"
   resource_group_name    = azurerm_resource_group.this.name

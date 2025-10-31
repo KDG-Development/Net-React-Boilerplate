@@ -166,16 +166,32 @@ stages:
                 WEBAPP_PRINCIPAL_ID=$(az webapp identity show --resource-group "$RG" --name "$WEBAPP" --query principalId -o tsv)
                 echo "Webapp Principal ID: $WEBAPP_PRINCIPAL_ID"
                 
-                # Grant webapp access to Key Vault
-                echo "Granting webapp Key Vault Secrets User role..."
-                az role assignment create \
-                  --assignee-object-id "$WEBAPP_PRINCIPAL_ID" \
-                  --assignee-principal-type ServicePrincipal \
-                  --role "Key Vault Secrets User" \
-                  --scope "$KV_ID" 2>/dev/null || echo "Role assignment may already exist"
+                echo ""
+                echo "==================================================================="
+                echo "MANUAL SETUP REQUIRED (if not already done):"
+                echo "==================================================================="
+                echo "Grant the webapp managed identity access to Key Vault and ACR."
+                echo "Run these commands once per environment:"
+                echo ""
+                echo "# Grant Key Vault access:"
+                echo "az role assignment create \\"
+                echo "  --assignee-object-id $WEBAPP_PRINCIPAL_ID \\"
+                echo "  --assignee-principal-type ServicePrincipal \\"
+                echo "  --role \"Key Vault Secrets User\" \\"
+                echo "  --scope \"$KV_ID\""
+                echo ""
+                echo "# Grant ACR pull access:"
+                ACR_ID=$(jq -r .acr.value.id < tf-output.json)
+                echo "az role assignment create \\"
+                echo "  --assignee-object-id $WEBAPP_PRINCIPAL_ID \\"
+                echo "  --assignee-principal-type ServicePrincipal \\"
+                echo "  --role \"AcrPull\" \\"
+                echo "  --scope \"$ACR_ID\""
+                echo "==================================================================="
+                echo ""
                 
-                echo "Waiting for permissions to propagate..."
-                sleep 15
+                echo "Waiting for any permission changes to propagate..."
+                sleep 10
                 
                 # Get secret URIs
                 echo "Getting Key Vault secret URIs..."
