@@ -155,10 +155,46 @@ public abstract class IntegrationTestBase : IClassFixture<DatabaseTestFixture>
         return connection;
     }
 
-    protected async Task<NpgsqlTransaction> BeginTransaction()
+    protected async Task<DisposableTransaction> BeginTransaction()
     {
         var connection = await GetDatabaseConnection();
-        return await connection.BeginTransactionAsync();
+        var transaction = await connection.BeginTransactionAsync();
+        return new DisposableTransaction(connection, transaction);
+    }
+}
+
+public class DisposableTransaction : IDisposable, IAsyncDisposable
+{
+    private readonly NpgsqlConnection _connection;
+    private readonly NpgsqlTransaction _transaction;
+    private bool _disposed;
+
+    public DisposableTransaction(NpgsqlConnection connection, NpgsqlTransaction transaction)
+    {
+        _connection = connection;
+        _transaction = transaction;
+    }
+
+    public NpgsqlTransaction Transaction => _transaction;
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _transaction?.Dispose();
+        _connection?.Dispose();
+        _disposed = true;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed) return;
+        if (_transaction != null) {
+            await _transaction.DisposeAsync();
+        }
+        if (_connection != null) {
+            await _connection.DisposeAsync();
+        }
+        _disposed = true;
     }
 }
 
