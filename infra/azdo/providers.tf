@@ -14,7 +14,7 @@ terraform {
 
 provider "azuredevops" {
   # Authentication via AZDO_PERSONAL_ACCESS_TOKEN environment variable
-  # or TF_VAR_azdo_personal_access_token
+  org_service_url = var.azdo_org_service_url
 }
 
 provider "azurerm" {
