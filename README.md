@@ -40,6 +40,13 @@ docker compose --profile app up --build
 
 This section guides you through setting up automated infrastructure provisioning and application deployment to Azure using Terraform and Azure DevOps Pipelines.
 
+**Configuration Approach:**
+- ✅ Infrastructure provisioned via Terraform (fully automated)
+- ✅ Azure service connections created manually (one-time setup)
+- ✅ Deployment variable groups created manually (one-time setup)
+- ✅ Automatic permission granting (Key Vault, ACR) with fallback to manual commands
+- ❌ No Personal Access Tokens (PAT) required
+
 ### Prerequisites
 
 Before you begin, ensure you have:
@@ -47,6 +54,7 @@ Before you begin, ensure you have:
 - Azure DevOps organization and project
 - Owner or User Access Administrator role on the Azure subscription (for one-time setup)
 - Azure CLI installed locally (for manual setup steps)
+- Ability to create service connections and variable groups in Azure DevOps
 
 ### Architecture Overview
 
@@ -111,9 +119,9 @@ az role assignment create \
 
 ---
 
-### Step 3: Create Azure DevOps Variable Groups
+### Step 3: Create Infrastructure Variable Groups
 
-Create two variable groups (one for QA, one for Prod) with environment-specific configuration:
+Create two variable groups (one for QA, one for Prod) with infrastructure configuration:
 
 1. In Azure DevOps, go to **Pipelines** → **Library** → **+ Variable group**
 2. Create `qa-infra-vars` with these variables:
@@ -125,23 +133,16 @@ Create two variable groups (one for QA, one for Prod) with environment-specific 
 | `TFSTATE_CONTAINER` | `tfstate` | No | Container name for state files |
 | `PostgresAdminPassword` | `<strong-password>` | **Yes** | PostgreSQL admin password |
 | `AzureServiceConnection` | `sc-arm-<project>` | No | Your service connection name |
-| `AzureDevOpsPAT` | `<your-pat-token>` | **Yes** | Azure DevOps Personal Access Token (see below) |
-| `AzureDevOpsOrgUrl` | `https://dev.azure.com/<org>` | No | Your Azure DevOps organization URL |
-| `AzureDevOpsProjectName` | `<project-name>` | No | Your Azure DevOps project name |
+| `ProjectName` | `kdg-boilerplate` | No | Project name (used in resource naming) |
 
 3. Repeat for `prod-infra-vars` (use same variable names, different values for prod)
-
-**Creating the Azure DevOps PAT:**
-- In Azure DevOps, click your profile icon → **Personal access tokens** → **+ New Token**
-- Set name: `Terraform Infrastructure Automation`
-- Select scopes: **Service Connections: Read & manage**, **Variable Groups: Read & manage**
-- Copy the token and store it as `AzureDevOpsPAT` (mark as secret)
 
 **Important Notes:**
 - Storage account names must be **globally unique** across all of Azure
 - Storage account names can only contain **lowercase letters and numbers** (no hyphens or underscores)
 - Examples: `kdgboilerplatetfstate`, `mycompanytfstate123`
 - Do NOT check "Link secrets from an Azure key vault" - we provision Key Vault via Terraform
+- Grant access permission to all pipelines (or specific pipelines as needed)
 
 ---
 
@@ -177,9 +178,9 @@ The pipeline has the following parameters:
 
 **What happens on first run:**
 
-**Stage 1: Provision Infrastructure**
+**Infrastructure Provisioning Stage:**
 - Creates Terraform state storage (resource group, storage account, container)
-- Grants service principal access to state storage
+- Grants service principal access to state storage  
 - Provisions all infrastructure via Terraform:
   - Resource group: `rg-kdg-boilerplate-qa`
   - Key Vault: `kv-kdg-boilerplate-qa-xxxxx`
@@ -187,18 +188,20 @@ The pipeline has the following parameters:
   - PostgreSQL Server: `pg-kdg-boilerplate-qa-xxxxx`
   - PostgreSQL Database: `kdg_boilerplate_db`
   - App Service Plan: `asp-kdg-boilerplate-qa`
-  - App Service: `app-kdg-boilerplate-qa`
+  - App Service: `app-kdg-boilerplate-qa` (configured to listen on port 8080)
   - 6 Key Vault secrets (JWT keys, connection strings, etc.)
-- Grants webapp managed identity access to Key Vault
-- Configures App Service with Key Vault references
+  - PostgreSQL extensions configuration (UUID-OSSP, PGCRYPTO, CITEXT, BTREE_GIST)
+- **Automatically attempts to grant permissions** (if service principal has sufficient rights):
+  - Webapp managed identity → Key Vault Secrets User role
+  - Webapp managed identity → AcrPull role on Container Registry
+- Configures App Service with Key Vault references and container settings
 
-**Stage 2: Configure Azure DevOps (Automated)**
-- Creates ACR service connection: `sc-acr-kdg-boilerplate-qa`
-- Creates variable group: `qa-app-vars` with 7 deployment variables
-- Automatically populates variables with infrastructure details
-- No manual configuration required!
+**Expected duration:** 6-10 minutes
 
-**Expected duration:** 6-12 minutes
+**Important Notes:**
+- If automatic permission granting fails, the pipeline displays manual commands to run
+- The webapp uses managed identity to pull images from ACR (no passwords needed)
+- All secrets are in Key Vault and referenced by App Service via managed identity
 
 **Second Run (Prod Environment):**
 1. Click **Run pipeline** again
@@ -234,112 +237,165 @@ After successful pipeline runs, verify in Azure Portal:
 
 ---
 
-### Step 7: Using the Deployment Pipeline
+### Step 7: Create ACR Service Connection (Manual)
 
-After the infrastructure pipeline completes successfully, your deployment pipeline is automatically configured and ready to use!
+After the infrastructure pipeline completes, manually create a service connection for Azure Container Registry:
 
-#### What Was Automatically Created
+1. **Go to Azure DevOps** → **Project Settings** → **Service connections**
+2. Click **New service connection** → **Docker Registry** → **Azure Container Registry**
+3. **Configure the connection:**
+   - **Authentication Type**: Select **Workload Identity federation (automatic)** or **Service Principal**
+   - **Subscription**: Select your Azure subscription
+   - **Azure Container Registry**: Select your ACR (e.g., `acrkdgboilerplateqaxxxxx`)
+   - **Service connection name**: `acr-<project>-<env>` (e.g., `acr-kdg-boilerplate-qa`)
+   - **Description**: `Container Registry for <env> environment`
+   - Check **Grant access permission to all pipelines**
+4. Click **Save**
 
-The infrastructure pipeline's second stage created:
+Repeat this process for production environment with the production ACR.
 
-1. **ACR Service Connection**: `sc-acr-<project>-<env>`
-   - Points to your Container Registry
-   - Configured for container image push/pull
-   - Uses your existing service principal
+---
 
-2. **Variable Group**: `<env>-app-vars` (e.g., `qa-app-vars`, `prod-app-vars`)
-   - Contains 7 deployment variables:
-     - `dockerRegistryServiceConnection` - ACR service connection name
-     - `azureResourceServiceConnection` - ARM service connection name
-     - `resourceGroupName` - Resource group name
-     - `webAppName` - App Service name
-     - `postgresServerName` - PostgreSQL server name
-     - `imageRepository` - Docker image repository name (project name)
-     - `environment` - Environment name (qa/prod)
+### Step 8: Create Deployment Variable Groups (Manual)
 
-#### Running the Deployment Pipeline
+Create variable groups for deployment pipelines with resource information:
+
+1. **Go to Azure DevOps** → **Pipelines** → **Library** → **+ Variable group**
+2. Create `qa-deployment-vars` with these variables:
+
+| Variable Name | Value | Description |
+|---------------|-------|-------------|
+| `dockerRegistryServiceConnection` | `acr-<project>-qa` | ACR service connection name from Step 7 |
+| `azureResourceServiceConnection` | `sc-arm-<project>` | ARM service connection name from Step 1 |
+| `resourceGroupName` | `rg-<project>-qa` | Resource group name (from Azure Portal) |
+| `webAppName` | `app-<project>-qa` | App Service name (from Azure Portal) |
+| `postgresServerName` | `pg-<project>-qa-xxxxx` | PostgreSQL server name (from Azure Portal) |
+| `imageRepository` | `<project-name>` | Docker image repository name (e.g., `kdg-boilerplate`) |
+| `environment` | `qa` | Environment name |
+
+3. Check **Grant access permission to all pipelines**
+4. Click **Save**
+5. Repeat for `prod-deployment-vars` with production values
+
+**Finding Resource Names:**
+```bash
+# Get resource names from Azure
+$RG = "rg-<project>-qa"
+az webapp list --resource-group $RG --query "[0].name" -o tsv
+az postgres flexible-server list --resource-group $RG --query "[0].name" -o tsv
+az acr list --resource-group $RG --query "[0].name" -o tsv
+```
+
+---
+
+### Step 9: Prepare Secure Files for Deployment
+
+Upload environment-specific configuration files to Azure DevOps Secure Files:
+
+1. **Create `appsettings.qa.json`**:
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}
+```
+
+2. **Create `.env.qa`**:
+```bash
+S247_LICENSE_KEY=your_site24x7_license_key_for_qa
+SITE24X7_APP_NAME=YourAppName-QA
+ASPNETCORE_ENVIRONMENT=Production
+```
+
+3. **Upload to Azure DevOps**:
+   - Go to **Pipelines** → **Library** → **Secure files** tab
+   - Click **+ Secure file**
+   - Upload `appsettings.qa.json` and `.env.qa`
+   - Click **Authorize for use in all pipelines** for each file
+
+4. **Repeat for production**: Create and upload `appsettings.prod.json` and `.env.prod`
+
+**Important**: Do NOT put database connection strings or JWT keys in these files - they're managed by Azure Key Vault!
+
+---
+
+### Step 10: Running the Deployment Pipeline
 
 1. In Azure DevOps, go to **Pipelines** → **New pipeline**
 2. Select your repository → **Existing Azure Pipelines YAML file**
 3. Select `/azure-pipelines-example.yml`
+4. Click **Save** (don't run yet)
+5. Grant permissions when prompted:
+   - Variable group usage
+   - Service connection usage
+   - Secure file usage
+
+**First Deployment:**
+1. Click **Run pipeline**
+2. Select environment: `qa`
+3. Verify parameters match your configuration
 4. Click **Run**
-5. Select environment: `qa` or `prod`
-6. Pipeline will:
-   - Build Docker image with your application
-   - Run database migrations
-   - Push image to Container Registry
-   - Deploy to App Service
 
-**No manual variable configuration needed!** Everything is automatically populated from the variable groups.
+**Pipeline Steps:**
+- Downloads secure files (`appsettings.qa.json`, `.env.qa`)
+- Builds Docker image (port 8080)
+- Creates temporary PostgreSQL firewall rule
+- Runs database migrations
+- Removes firewall rule
+- Pushes image to Azure Container Registry
+- Deploys to App Service
 
-#### Manual Azure DevOps Configuration (If Needed)
+**Expected duration:** 3-5 minutes
 
-If you need to manually run the Azure DevOps Terraform (e.g., to update configuration without re-running infrastructure):
-
-```bash
-cd infra/azdo
-
-# Set Azure DevOps PAT
-export AZDO_PERSONAL_ACCESS_TOKEN="<your-pat>"
-
-# Create backend.hcl (use values from your variable group)
-cat > backend.hcl <<EOF
-resource_group_name  = "rg-kdg-boilerplate-tfstate"
-storage_account_name = "<your-storage-account>"
-container_name       = "tfstate"
-key                  = "kdg-boilerplate-qa-azdo.tfstate"
-use_oidc             = true
-use_azuread_auth     = true
-EOF
-
-# Run Terraform with variable groups values
-terraform init -backend-config=backend.hcl
-terraform plan \
-  -var="azdo_org_service_url=https://dev.azure.com/<org>" \
-  -var="azdo_project_name=<project>" \
-  -var="environment=qa" \
-  -var="project_name=kdg-boilerplate" \
-  -var="azure_service_connection_name=sc-arm-kdg-boilerplate" \
-  -var="tfstate_rg=rg-kdg-boilerplate-tfstate" \
-  -var="tfstate_account=<storage-account>" \
-  -var="subscription_id=<sub-id>" \
-  -var="tenant_id=<tenant-id>" \
-  -var="service_principal_id=<sp-id>" \
-  -out=tfplan
-terraform apply tfplan
-```
+**Important Notes:**
+- All variables come from the `<env>-deployment-vars` variable group
+- Database credentials come from Key Vault (webapp's managed identity)
+- Container runs on port 8080 (configured in Dockerfile)
+- Migrations require temporary firewall access to PostgreSQL
 
 ---
 
 ### Pipeline Behavior on Subsequent Runs
 
-The infrastructure pipeline is **idempotent** - safe to run multiple times:
+Both pipelines are **idempotent** - safe to run multiple times:
 
-| Stage | Step | First Run | Subsequent Runs |
-|-------|------|-----------|-----------------|
-| **Infra** | Bootstrap State Storage | Creates storage infrastructure | Skips (already exists) |
-| **Infra** | Terraform Init | Downloads providers | Uses existing state |
-| **Infra** | Terraform Plan | Plans 15+ resource creations | Shows "No changes" if code unchanged |
-| **Infra** | Terraform Apply | Creates all resources | Only applies changes if code modified |
-| **Infra** | Grant Key Vault Access | Grants webapp access | Skips (already exists) |
-| **Infra** | App Service Config | Applies settings | Reapplies (causes brief restart) |
-| **Azure DevOps** | Terraform Init | Downloads providers | Uses existing state |
-| **Azure DevOps** | Terraform Plan | Creates service connection & variable group | Shows "No changes" if config unchanged |
-| **Azure DevOps** | Terraform Apply | Creates Azure DevOps resources | Updates if needed |
+**Infrastructure Pipeline:**
 
-**When to re-run:**
+| Step | First Run | Subsequent Runs |
+|------|-----------|-----------------|
+| Bootstrap State Storage | Creates storage infrastructure | Skips (already exists) |
+| Terraform Init | Downloads providers | Uses existing state |
+| Terraform Plan | Plans 15+ resource creations | Shows "No changes" if code unchanged |
+| Terraform Apply | Creates all resources | Only applies changes if code modified |
+| Grant Permissions | Attempts to grant Key Vault & ACR access | Shows success or "already exists" |
+| App Service Config | Applies settings | Reapplies (causes brief restart) |
+
+**When to re-run infrastructure pipeline:**
 - After modifying Terraform code (e.g., changing SKUs, adding resources)
 - After Key Vault secrets expire or need rotation
 - To ensure infrastructure matches code (drift detection)
+- When database extensions need updating
+
+**Deployment Pipeline:**
+- Safe to run multiple times
+- Always builds fresh Docker image
+- Runs migrations (skips if already applied)
+- Deploys new container to App Service
+- Brief downtime (~30 seconds) during deployment
 
 ---
 
 ### Application Pipeline and Local Usage
 
-1. **Application Deployment**: The `azure-pipelines-example.yml` pipeline is fully automated
-   - All variables automatically populated from variable groups
+1. **Application Deployment**: The `azure-pipelines-example.yml` pipeline uses manual variable groups
+   - Variables populated from `<env>-deployment-vars` variable groups (created in Step 8)
    - Select environment (`qa` or `prod`) when running
-   - No manual configuration needed
+   - Secure files (`appsettings.<env>.json`, `.env.<env>`) must be uploaded (Step 9)
    - Builds container, runs migrations, deploys to App Service
 
 2. **Local Development**:
@@ -374,24 +430,36 @@ The infrastructure pipeline is **idempotent** - safe to run multiple times:
 - Check Azure region capacity and quotas
 
 **Key Vault access denied:**
-- Verify webapp managed identity has "Key Vault Secrets User" role
+- Check the infrastructure pipeline output for manual permission grant commands
+- Run the displayed commands to grant "Key Vault Secrets User" role to webapp
 - Wait 2-3 minutes for role assignments to propagate
+- Restart the App Service after granting permissions
 
-**Pipeline parameter not showing:**
-- Edit pipeline → Click "..." → **Triggers** → **Variables** tab to verify parameters
+**ACR pull authentication error:**
+- Check the infrastructure pipeline output for manual permission grant commands
+- Run the displayed commands to grant "AcrPull" role to webapp managed identity
+- Verify ACR service connection is configured correctly in Azure DevOps
 
-**Azure DevOps stage fails with authentication error:**
-- Verify `AzureDevOpsPAT` variable is set in the variable group and marked as secret
-- Check PAT hasn't expired (recreate if needed)
-- Ensure PAT has required scopes: Service Connections (Read & manage), Variable Groups (Read & manage)
+**Container timeout on port 8080:**
+- Ensure Dockerfile exposes and listens on port 8080 (not 5261)
+- Check `ASPNETCORE_URLS=http://+:8080` in Dockerfile
+- Enable container logging: `az webapp log config --docker-container-logging filesystem`
+- View logs: `az webapp log tail --name <app-name> --resource-group <rg>`
 
-**Azure DevOps stage fails with "project not found":**
-- Verify `AzureDevOpsOrgUrl` format: `https://dev.azure.com/<org-name>` (no trailing slash)
-- Verify `AzureDevOpsProjectName` matches exactly (case-sensitive)
+**Database migration fails with extension errors:**
+- Verify PostgreSQL extensions are configured in Terraform (`UUID-OSSP`, `PGCRYPTO`, `CITEXT`, `BTREE_GIST`)
+- Re-run infrastructure pipeline to apply extension configuration
+- Check PostgreSQL server configuration in Azure Portal
 
-**Service connection or variable group already exists:**
-- Terraform will update existing resources instead of creating duplicates
-- This is expected behavior and safe
+**Variable group not found:**
+- Ensure you created `<env>-deployment-vars` variable groups (Step 8)
+- Grant pipeline permission to access variable groups
+- Variable group names must match exactly (case-sensitive)
+
+**Secure file not found:**
+- Upload `appsettings.<env>.json` and `.env.<env>` to Azure DevOps Secure Files (Step 9)
+- Click "Authorize for use in all pipelines" for each file
+- File names must match exactly (including the dot prefix for `.env.*`)
 
 ---
 
@@ -403,9 +471,12 @@ The infrastructure pipeline is **idempotent** - safe to run multiple times:
 ✅ **Separate environments** - QA and Prod are completely isolated  
 ✅ **Terraform state** - Stored securely in Azure Storage with RBAC  
 ✅ **OIDC authentication** - Pipeline uses Workload Identity Federation (no long-lived secrets)  
-✅ **Infrastructure as Code** - All infrastructure and Azure DevOps configuration managed via Terraform  
-✅ **Automated deployment** - No manual variable configuration reduces human error  
-✅ **PAT security** - Azure DevOps PAT stored as secret variable, only used during automation
+✅ **Infrastructure as Code** - All infrastructure managed via Terraform  
+✅ **Container security** - Images pulled from private ACR using managed identity  
+✅ **Secure files** - Environment-specific configs stored in Azure DevOps Secure Files  
+✅ **Automatic permission granting** - Pipeline attempts to grant required roles automatically  
+✅ **Database extensions** - Explicitly allow-listed PostgreSQL extensions for security  
+✅ **Port configuration** - Standardized on port 8080 for containerized deployments
 
 ## Site24x7 APM Integration
 
