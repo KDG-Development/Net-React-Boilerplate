@@ -286,7 +286,7 @@ stages:
                 cd infra/azdo
                 
                 echo "Initializing Azure DevOps Terraform..."
-                terraform init -backend-config=../../backend.hcl
+                terraform init -backend-config=backend.hcl
                 
                 echo "Planning Azure DevOps configuration..."
                 terraform plan -out=tfplan
