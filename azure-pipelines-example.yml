@@ -10,11 +10,12 @@ parameters:
     displayName: Target Environment
 
 variables:
-  # Link environment-specific variable group created by Terraform
+  # Link to manually created variable group
+  # You must create this variable group in Azure DevOps Library
   - ${{ if eq(parameters.environment, 'qa') }}:
-    - group: qa-app-vars
+    - group: qa-deployment-vars
   - ${{ if eq(parameters.environment, 'prod') }}:
-    - group: prod-app-vars
+    - group: prod-deployment-vars
   
   # Pipeline-specific variables
   - name: tag

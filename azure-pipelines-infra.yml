@@ -223,85 +223,12 @@ stages:
                 
                 echo "App Service configuration complete!"
 
-  - stage: ConfigureAzureDevOps
-    displayName: Configure Azure DevOps Automation
-    dependsOn: Infra
-    condition: succeeded()
-    jobs:
-      - job: TerraformAzureDevOps
-        pool:
-          vmImage: ubuntu-latest
-        steps:
-          - task: TerraformInstaller@1
-            inputs:
-              terraformVersion: '1.7.5'
-
-          - script: |
-              set -e
-              cat > backend.hcl <<EOF
-              resource_group_name  = "$(TFSTATE_RG)"
-              storage_account_name = "$(TFSTATE_ACCOUNT)"
-              container_name       = "$(TFSTATE_CONTAINER)"
-              key                  = "$(ProjectName)-${{ parameters.environment }}-azdo.tfstate"
-              use_oidc             = true
-              use_azuread_auth     = true
-              EOF
-            displayName: Create backend.hcl
-            workingDirectory: infra/azdo
-
-          - task: AzureCLI@2
-            displayName: Terraform init/plan/apply for Azure DevOps
-            inputs:
-              azureSubscription: '$(AzureServiceConnection)'
-              scriptType: bash
-              scriptLocation: inlineScript
-              addSpnToEnvironment: true
-              inlineScript: |
-                set -eo pipefail
-                
-                # Export OIDC authentication variables for Terraform
-                export ARM_CLIENT_ID="${servicePrincipalId}"
-                export ARM_TENANT_ID="${tenantId}"
-                export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
-                export ARM_USE_OIDC=true
-                if [ -n "${idToken:-}" ]; then
-                  export ARM_OIDC_TOKEN="${idToken}"
-                fi
-                
-                # Export Azure DevOps PAT
-                export AZDO_PERSONAL_ACCESS_TOKEN='$(AzureDevOpsPAT)'
-                
-                # Export Terraform variables as environment variables
-                export TF_VAR_azdo_org_service_url='$(AzureDevOpsOrgUrl)'
-                export TF_VAR_azdo_project_name='$(AzureDevOpsProjectName)'
-                export TF_VAR_environment='${{ parameters.environment }}'
-                export TF_VAR_project_name='$(ProjectName)'
-                export TF_VAR_azure_service_connection_name='$(AzureServiceConnection)'
-                export TF_VAR_tfstate_rg='$(TFSTATE_RG)'
-                export TF_VAR_tfstate_account='$(TFSTATE_ACCOUNT)'
-                export TF_VAR_subscription_id="$ARM_SUBSCRIPTION_ID"
-                export TF_VAR_tenant_id="$ARM_TENANT_ID"
-                
-                cd infra/azdo
-                
-                echo "Initializing Azure DevOps Terraform..."
-                terraform init -backend-config=backend.hcl
-                
-                echo "Planning Azure DevOps configuration..."
-                terraform plan -out=tfplan
-                
-                echo "Applying Azure DevOps configuration..."
-                terraform apply -auto-approve tfplan
-                
-                echo ""
-                echo "=========================================================================="
-                echo "Azure DevOps Configuration Complete!"
-                echo "=========================================================================="
-                echo "Created resources:"
-                terraform output -json | jq -r 'to_entries[] | "  - \(.key): \(.value.value)"'
-                echo ""
-                echo "The deployment pipeline (azure-pipelines-example.yml) is now fully"
-                echo "configured and ready to use with environment parameter: ${{ parameters.environment }}"
-                echo "=========================================================================="
+  # ========================================================================
+  # Azure DevOps automation stage (DISABLED - No PAT available)
+  # ========================================================================
+  # This stage is disabled because PAT tokens are not permitted.
+  # Service connections and variable groups must be created manually.
+  # See instructions below for manual setup.
+  # ========================================================================
 
 
