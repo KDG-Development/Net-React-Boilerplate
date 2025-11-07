@@ -102,7 +102,7 @@ stages:
             exit $RULE_CREATE_EXIT
           fi
 
-    Run database migrations
+    # Run database migrations
     - task: DotNetCoreCLI@2
       displayName: 'Run migrations'
       inputs:
