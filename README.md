@@ -25,6 +25,21 @@ docker compose --profile app up --build
 
 > After startup (profile: app): Frontend https://localhost:5173, API https://localhost:5261
 
+# Running Tests
+
+## Unit Tests
+```bash
+cd KDG.UnitTests
+dotnet test
+```
+
+## Integration Tests
+Open Docker.
+```bash
+cd KDG.IntegrationTests
+dotnet test
+```
+
 # Creating a Project Based on Boilerplate
 
 1. Initialize project repository
@@ -45,6 +60,17 @@ docker compose --profile app up --build
 5. Update the azure-pipelines.[environment].yml file with the appropriate variable values, and values enclosed in square brackets
 6. Create a pipeline in azure devops with the azure-pipelines.[environment].yml file
 7. Ensure you have Continuous deployment enabled in the azure portal for your web app
+
+### Integration Test Configuration for CI/CD
+
+To enable integration tests in Azure Pipelines:
+
+1. Copy `KDG.IntegrationTests/appsettings.json` to `KDG.IntegrationTests/appsettings.IntegrationAzure.json`
+2. Fill in the required values (ConnectionString, Jwt settings, etc.)
+3. Upload `appsettings.IntegrationAzure.json` to Azure DevOps Secure Files
+4. Uncomment the `IntegrationTests` job in `azure-pipelines-example.yml`
+
+**Note**: Integration test appsettings files are gitignored and should not be committed to the repository.
 
 ## Site24x7 APM Integration
 

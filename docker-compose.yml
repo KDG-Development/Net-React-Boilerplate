@@ -10,6 +10,9 @@ services:
     volumes:
       - ./Migrations:/src/Migrations
       - ./appsettings.${ENVIRONMENT:-Development}.json:/src/appsettings.json:ro
+      # Prevent sync of build artifacts
+      - /src/Migrations/bin/
+      - /src/Migrations/obj/
     environment:
       - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT:-Development}
     command: dotnet run --project /src/Migrations/Migrations.csproj
@@ -84,6 +87,99 @@ services:
       - "5442:5432"
     volumes:
       - postgres_data_kdg-boilerplate:/var/lib/postgresql/data
+
+  unit-test:
+    profiles: ["test"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: build
+      args:
+        - BUILD_CONFIGURATION=Development
+    volumes:
+      - ./KDG.Boilerplate.Server:/src/KDG.Boilerplate.Server
+      - ./KDG.UnitTests:/src/KDG.UnitTests
+      # Prevent sync of build artifacts
+      - /src/KDG.Boilerplate.Server/bin/
+      - /src/KDG.Boilerplate.Server/obj/
+      - /src/KDG.UnitTests/bin/
+      - /src/KDG.UnitTests/obj/
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    working_dir: /src
+    entrypoint: ["dotnet"]
+    command: ["test", "KDG.UnitTests/KDG.UnitTests.csproj", "--verbosity", "normal"]
+
+  # NOTE: You can run integration tests directly with "dotnet test" using Testcontainers.
+  # This Docker Compose profile remains available for those who prefer it.
+  
+  integration-test-db:
+    profiles: ["integration-test"]
+    image: postgres:16
+    container_name: kdg-integration-test-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=kdg-integration-test
+    ports:
+      - "5454:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d kdg-integration-test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  integration-test-migrations:
+    profiles: ["integration-test"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: build
+      args:
+        - BUILD_CONFIGURATION=Development
+    volumes:
+      - ./Migrations:/src/Migrations
+      - ./KDG.IntegrationTests/appsettings.IntegrationLocal.json:/src/appsettings.json:ro
+      # Prevent sync of build artifacts
+      - /src/Migrations/bin/
+      - /src/Migrations/obj/
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Test
+    command: dotnet run --project /src/Migrations/Migrations.csproj
+    depends_on:
+      integration-test-db:
+        condition: service_healthy
+
+  integration-test:
+    profiles: ["integration-test"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: build
+      args:
+        - BUILD_CONFIGURATION=Development
+    volumes:
+      - ./KDG.Boilerplate.Server:/src/KDG.Boilerplate.Server
+      - ./KDG.IntegrationTests:/src/KDG.IntegrationTests
+      - ./Migrations:/src/Migrations
+      # Prevent sync of build artifacts
+      - /src/KDG.Boilerplate.Server/bin/
+      - /src/KDG.Boilerplate.Server/obj/
+      - /src/KDG.IntegrationTests/bin/
+      - /src/KDG.IntegrationTests/obj/
+      - /src/Migrations/bin/
+      - /src/Migrations/obj/
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Test
+      - ASPNETCORE_URLS=http://+:5260
+    working_dir: /src
+    entrypoint: ["dotnet"]
+    command: ["test", "KDG.IntegrationTests/KDG.IntegrationTests.csproj", "--verbosity", "normal"]
+    depends_on:
+      integration-test-migrations:
+        condition: service_completed_successfully
 
 volumes:
   postgres_data_kdg-boilerplate:
