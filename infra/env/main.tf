@@ -70,11 +70,19 @@ resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_azure" {
   end_ip_address   = "0.0.0.0"
 }
 
+resource "azurerm_postgresql_flexible_server_configuration" "extensions" {
+  name      = "azure.extensions"
+  server_id = azurerm_postgresql_flexible_server.this.id
+  value     = "UUID-OSSP,PGCRYPTO,CITEXT,BTREE_GIST"
+}
+
 resource "azurerm_postgresql_flexible_server_database" "app" {
   name      = "${var.project_name}_db"
   server_id = azurerm_postgresql_flexible_server.this.id
   charset   = "UTF8"
   collation = "en_US.utf8"
+  
+  depends_on = [azurerm_postgresql_flexible_server_configuration.extensions]
 }
 
 resource "azurerm_service_plan" "this" {
