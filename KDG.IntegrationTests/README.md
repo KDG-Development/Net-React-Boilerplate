@@ -72,7 +72,7 @@ docker compose --profile integration-test down -v
 - Tests run in a container
 - Database uses tmpfs (in-memory, destroyed after tests)
 
-**Configuration**: Tests use `appsettings.IntegrationLocal.json` if present
+**Configuration**: `appsettings.IntegrationLocal.json` is **required** for Docker Compose (see Setup Instructions below)
 
 ### 3. Azure Pipelines CI/CD (Automated)
 
@@ -110,7 +110,7 @@ Integration tests use a template file (`appsettings.json`) as a reference. Confi
 
 ### Setup Instructions
 
-1. **For Docker Compose** (optional):
+1. **For Docker Compose** (required):
    ```bash
    cd KDG.IntegrationTests
    cp appsettings.json appsettings.IntegrationLocal.json
@@ -139,7 +139,7 @@ Integration tests use a template file (`appsettings.json`) as a reference. Confi
    ```
    Then upload `appsettings.IntegrationAzure.json` to Azure DevOps Secure Files.
 
-**Note**: Both files are optional for `dotnet test` - Testcontainers provides connection string automatically. These files are gitignored and should not be committed to the repository.
+**Note**: `appsettings.IntegrationLocal.json` is **required** for Docker Compose (the `integration-test-migrations` service mounts it as a volume). For `dotnet test`, both files are optional - Testcontainers provides connection string automatically. These files are gitignored and should not be committed to the repository.
 
 ## Further Reading
 
