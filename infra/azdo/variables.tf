@@ -22,11 +22,6 @@ variable "project_name" {
   type        = string
 }
 
-variable "azure_service_connection_name" {
-  description = "Name of the existing Azure Resource Manager service connection"
-  type        = string
-}
-
 variable "tfstate_rg" {
   description = "Resource group name for Terraform state storage"
   type        = string
@@ -51,17 +46,5 @@ variable "subscription_id" {
 variable "tenant_id" {
   description = "Azure AD tenant ID"
   type        = string
-}
-
-variable "service_principal_id" {
-  description = "Service principal client ID for ACR authentication"
-  type        = string
-}
-
-variable "service_principal_key" {
-  description = "Service principal client secret for ACR authentication"
-  type        = string
-  sensitive   = true
-  default     = ""
 }
 
