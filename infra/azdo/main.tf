@@ -28,10 +28,12 @@ resource "azuredevops_serviceendpoint_azurecr" "acr" {
   service_endpoint_name = "sc-acr-${var.project_name}-${var.environment}"
   description           = "Service connection to ${var.environment} ACR (managed by Terraform)"
   
-  resource_group        = data.terraform_remote_state.infra.outputs.webapp.rg
-  azurecr_name          = data.terraform_remote_state.infra.outputs.acr.name
+  resource_group             = data.terraform_remote_state.infra.outputs.webapp.rg
+  azurecr_name               = data.terraform_remote_state.infra.outputs.acr.name
   azurecr_subscription_id    = var.subscription_id
   azurecr_subscription_name  = "Azure Subscription"
+  azurecr_spn_tenantid       = var.tenant_id
+  service_principal_id       = var.service_principal_id
 }
 
 # Create application variable group
