@@ -28,7 +28,7 @@ Write-Host "3. Look for 'Object ID' in the details" -ForegroundColor Yellow
 Write-Host "========================================================================" -ForegroundColor Cyan
 Write-Host ""
 
-$SP_OBJECT_ID = Read-Host "Enter Service Principal Object ID"
+$SP_OBJECT_ID = Read-Host "e1f67055-f95d-4925-9441-dd7a3b492a28"
 
 if ([string]::IsNullOrWhiteSpace($SP_OBJECT_ID)) {
     Write-Host "Error: Service Principal Object ID is required" -ForegroundColor Red
