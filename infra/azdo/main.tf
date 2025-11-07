@@ -33,7 +33,6 @@ resource "azuredevops_serviceendpoint_azurecr" "acr" {
   azurecr_subscription_id    = var.subscription_id
   azurecr_subscription_name  = "Azure Subscription"
   azurecr_spn_tenantid       = var.tenant_id
-  service_principal_id       = var.service_principal_id
 }
 
 # Create application variable group
