@@ -48,11 +48,11 @@ public class UserRepository : IUserRepository {
             Email = result.Email,
             PermissionGroups =
                 new HashSet<PermissionGroupBase>(
-                    result.PermissionGroups.Select(group => new PermissionGroupBase(group))
+                    (result.PermissionGroups ?? []).Select(group => new PermissionGroupBase(group))
                 ),
             Permissions =
                 new HashSet<PermissionBase>(
-                    result.Permissions.Select(permission => new PermissionBase(permission))
+                    (result.Permissions ?? []).Select(permission => new PermissionBase(permission))
                 ),
         };
     });
