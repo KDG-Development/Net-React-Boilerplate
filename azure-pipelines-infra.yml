@@ -166,32 +166,66 @@ stages:
                 WEBAPP_PRINCIPAL_ID=$(az webapp identity show --resource-group "$RG" --name "$WEBAPP" --query principalId -o tsv)
                 echo "Webapp Principal ID: $WEBAPP_PRINCIPAL_ID"
                 
-                echo ""
-                echo "==================================================================="
-                echo "MANUAL SETUP REQUIRED (if not already done):"
-                echo "==================================================================="
-                echo "Grant the webapp managed identity access to Key Vault and ACR."
-                echo "Run these commands once per environment:"
-                echo ""
-                echo "# Grant Key Vault access:"
-                echo "az role assignment create \\"
-                echo "  --assignee-object-id $WEBAPP_PRINCIPAL_ID \\"
-                echo "  --assignee-principal-type ServicePrincipal \\"
-                echo "  --role \"Key Vault Secrets User\" \\"
-                echo "  --scope \"$KV_ID\""
-                echo ""
-                echo "# Grant ACR pull access:"
                 ACR_ID=$(jq -r .acr.value.id < tf-output.json)
-                echo "az role assignment create \\"
-                echo "  --assignee-object-id $WEBAPP_PRINCIPAL_ID \\"
-                echo "  --assignee-principal-type ServicePrincipal \\"
-                echo "  --role \"AcrPull\" \\"
-                echo "  --scope \"$ACR_ID\""
+                
+                echo ""
+                echo "==================================================================="
+                echo "Granting Permissions to Webapp Managed Identity"
+                echo "==================================================================="
+                
+                # Try to grant Key Vault access automatically
+                echo "Attempting to grant Key Vault Secrets User role..."
+                if az role assignment create \
+                  --assignee-object-id "$WEBAPP_PRINCIPAL_ID" \
+                  --assignee-principal-type ServicePrincipal \
+                  --role "Key Vault Secrets User" \
+                  --scope "$KV_ID" 2>/dev/null; then
+                  echo "✅ Successfully granted Key Vault access"
+                else
+                  EXIT_CODE=$?
+                  if [ $EXIT_CODE -eq 0 ] || az role assignment list --assignee "$WEBAPP_PRINCIPAL_ID" --scope "$KV_ID" --role "Key Vault Secrets User" --query "[0]" -o tsv &>/dev/null; then
+                    echo "✅ Key Vault access already exists"
+                  else
+                    echo "⚠️  Could not automatically grant Key Vault access (insufficient permissions)"
+                    echo ""
+                    echo "MANUAL STEP REQUIRED - Run this command:"
+                    echo "az role assignment create \\"
+                    echo "  --assignee-object-id $WEBAPP_PRINCIPAL_ID \\"
+                    echo "  --assignee-principal-type ServicePrincipal \\"
+                    echo "  --role \"Key Vault Secrets User\" \\"
+                    echo "  --scope \"$KV_ID\""
+                  fi
+                fi
+                
+                echo ""
+                echo "Attempting to grant AcrPull role..."
+                if az role assignment create \
+                  --assignee-object-id "$WEBAPP_PRINCIPAL_ID" \
+                  --assignee-principal-type ServicePrincipal \
+                  --role "AcrPull" \
+                  --scope "$ACR_ID" 2>/dev/null; then
+                  echo "✅ Successfully granted ACR pull access"
+                else
+                  EXIT_CODE=$?
+                  if [ $EXIT_CODE -eq 0 ] || az role assignment list --assignee "$WEBAPP_PRINCIPAL_ID" --scope "$ACR_ID" --role "AcrPull" --query "[0]" -o tsv &>/dev/null; then
+                    echo "✅ ACR pull access already exists"
+                  else
+                    echo "⚠️  Could not automatically grant ACR access (insufficient permissions)"
+                    echo ""
+                    echo "MANUAL STEP REQUIRED - Run this command:"
+                    echo "az role assignment create \\"
+                    echo "  --assignee-object-id $WEBAPP_PRINCIPAL_ID \\"
+                    echo "  --assignee-principal-type ServicePrincipal \\"
+                    echo "  --role \"AcrPull\" \\"
+                    echo "  --scope \"$ACR_ID\""
+                  fi
+                fi
+                
                 echo "==================================================================="
                 echo ""
                 
-                echo "Waiting for any permission changes to propagate..."
-                sleep 10
+                echo "Waiting for permission changes to propagate..."
+                sleep 15
                 
                 # Get secret URIs
                 echo "Getting Key Vault secret URIs..."
