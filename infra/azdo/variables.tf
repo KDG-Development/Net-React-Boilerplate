@@ -22,6 +22,11 @@ variable "project_name" {
   type        = string
 }
 
+variable "azure_service_connection_name" {
+  description = "Name of the existing Azure Resource Manager service connection"
+  type        = string
+}
+
 variable "tfstate_rg" {
   description = "Resource group name for Terraform state storage"
   type        = string
