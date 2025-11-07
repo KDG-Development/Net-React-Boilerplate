@@ -102,12 +102,12 @@ stages:
           fi
 
     # Run database migrations
-    - task: DotNetCoreCLI@2
-      displayName: 'Run migrations'
-      inputs:
-        command: 'run'
-        projects: 'Migrations/Migrations.csproj'
-        arguments: '--configuration Release'
+    # - task: DotNetCoreCLI@2
+    #   displayName: 'Run migrations'
+    #   inputs:
+    #     command: 'run'
+    #     projects: 'Migrations/Migrations.csproj'
+    #     arguments: '--configuration Release'
 
     # Always clean up firewall rule
     - task: AzureCLI@2
