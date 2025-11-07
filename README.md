@@ -87,14 +87,32 @@ All secrets are stored in Key Vault and referenced by App Service via managed id
 
 ### Step 2: Grant Service Principal Permissions (One-Time Setup)
 
-The service principal needs specific Azure RBAC roles to provision infrastructure and manage secrets. Run these commands once:
+The service principal needs specific Azure RBAC roles to provision infrastructure and manage secrets.
+
+**Option A: Using the Setup Script (Recommended)**
+
+Run the provided PowerShell script:
+
+```powershell
+.\setup-service-principal.ps1
+```
+
+The script will:
+- Check your Azure login
+- Prompt for the service principal Object ID (from Azure DevOps service connection)
+- Grant all three required roles automatically
+- Handle cases where roles already exist
+
+**Option B: Manual Commands**
+
+If you prefer to run commands manually:
 
 ```bash
 # Login to Azure
 az login
 
 # Get your service principal Object ID from Azure DevOps service connection details
-# Replace with your actual Object ID and Subscription ID
+# Go to Azure DevOps → Project Settings → Service connections → Your connection → Details
 SP_OBJECT_ID="<your-sp-object-id>"
 SUBSCRIPTION_ID="<your-subscription-id>"
 
@@ -111,11 +129,21 @@ az role assignment create \
   --assignee-principal-type ServicePrincipal \
   --role "Key Vault Secrets Officer" \
   --scope "/subscriptions/$SUBSCRIPTION_ID"
+
+# Grant User Access Administrator role (to assign roles to managed identities)
+az role assignment create \
+  --assignee-object-id $SP_OBJECT_ID \
+  --assignee-principal-type ServicePrincipal \
+  --role "User Access Administrator" \
+  --scope "/subscriptions/$SUBSCRIPTION_ID"
 ```
 
 **Why these roles?**
 - **Contributor**: Creates/manages resource groups, storage accounts, databases, app services, etc.
 - **Key Vault Secrets Officer**: Creates and manages secrets in Key Vault (Terraform needs this)
+- **User Access Administrator**: Allows the pipeline to automatically grant roles (Storage Blob Data Contributor, Key Vault Secrets User, AcrPull) without manual commands
+
+**Important:** All three roles are required for fully automated deployment. Without User Access Administrator, you'll need to manually run permission grant commands displayed in the pipeline output.
 
 ---
 
