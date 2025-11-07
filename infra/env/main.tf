@@ -100,7 +100,7 @@ resource "azurerm_linux_web_app" "this" {
     always_on = true
     application_stack {
       docker_registry_url      = "https://${azurerm_container_registry.this.login_server}"
-      docker_image_name        = "${azurerm_container_registry.this.login_server}/${var.project_name}:latest"
+      docker_image_name        = "${var.project_name}:latest"
       docker_registry_username = azurerm_container_registry.this.login_server
     }
   }
