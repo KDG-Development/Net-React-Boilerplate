@@ -19,6 +19,7 @@ if (connectionString == null){
 
 KDG.Migrations.Migrations migration = new KDG.Migrations.Migrations(
     new MigrationConfig(
+        KDG.Migrations.DatabaseType.PostgreSQL,
         connectionString,
         Path.Combine(AppContext.BaseDirectory, "scripts")
     )

@@ -22,7 +22,7 @@ public class UserRepository : IUserRepository {
     }
     
     public async Task<User?> UserLogin(UserAuth authPayload) {
-    return await _database.withConnection(async connection => {
+    return await _database.WithConnection(async connection => {
         var sql = @"
             select
                 u.id,
