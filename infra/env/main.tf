@@ -171,4 +171,11 @@ output "acr" {
   }
 }
 
+output "postgres" {
+  value = {
+    name = azurerm_postgresql_flexible_server.this.name
+    fqdn = azurerm_postgresql_flexible_server.this.fqdn
+  }
+}
+
 

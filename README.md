@@ -125,8 +125,17 @@ Create two variable groups (one for QA, one for Prod) with environment-specific 
 | `TFSTATE_CONTAINER` | `tfstate` | No | Container name for state files |
 | `PostgresAdminPassword` | `<strong-password>` | **Yes** | PostgreSQL admin password |
 | `AzureServiceConnection` | `sc-arm-<project>` | No | Your service connection name |
+| `AzureDevOpsPAT` | `<your-pat-token>` | **Yes** | Azure DevOps Personal Access Token (see below) |
+| `AzureDevOpsOrgUrl` | `https://dev.azure.com/<org>` | No | Your Azure DevOps organization URL |
+| `AzureDevOpsProjectName` | `<project-name>` | No | Your Azure DevOps project name |
 
 3. Repeat for `prod-infra-vars` (use same variable names, different values for prod)
+
+**Creating the Azure DevOps PAT:**
+- In Azure DevOps, click your profile icon → **Personal access tokens** → **+ New Token**
+- Set name: `Terraform Infrastructure Automation`
+- Select scopes: **Service Connections: Read & manage**, **Variable Groups: Read & manage**
+- Copy the token and store it as `AzureDevOpsPAT` (mark as secret)
 
 **Important Notes:**
 - Storage account names must be **globally unique** across all of Azure
@@ -167,6 +176,8 @@ The pipeline has the following parameters:
 4. Click **Run**
 
 **What happens on first run:**
+
+**Stage 1: Provision Infrastructure**
 - Creates Terraform state storage (resource group, storage account, container)
 - Grants service principal access to state storage
 - Provisions all infrastructure via Terraform:
@@ -181,7 +192,13 @@ The pipeline has the following parameters:
 - Grants webapp managed identity access to Key Vault
 - Configures App Service with Key Vault references
 
-**Expected duration:** 5-10 minutes
+**Stage 2: Configure Azure DevOps (Automated)**
+- Creates ACR service connection: `sc-acr-kdg-boilerplate-qa`
+- Creates variable group: `qa-app-vars` with 7 deployment variables
+- Automatically populates variables with infrastructure details
+- No manual configuration required!
+
+**Expected duration:** 6-12 minutes
 
 **Second Run (Prod Environment):**
 1. Click **Run pipeline** again
@@ -217,18 +234,98 @@ After successful pipeline runs, verify in Azure Portal:
 
 ---
 
+### Step 7: Using the Deployment Pipeline
+
+After the infrastructure pipeline completes successfully, your deployment pipeline is automatically configured and ready to use!
+
+#### What Was Automatically Created
+
+The infrastructure pipeline's second stage created:
+
+1. **ACR Service Connection**: `sc-acr-<project>-<env>`
+   - Points to your Container Registry
+   - Configured for container image push/pull
+   - Uses your existing service principal
+
+2. **Variable Group**: `<env>-app-vars` (e.g., `qa-app-vars`, `prod-app-vars`)
+   - Contains 7 deployment variables:
+     - `dockerRegistryServiceConnection` - ACR service connection name
+     - `azureResourceServiceConnection` - ARM service connection name
+     - `resourceGroupName` - Resource group name
+     - `webAppName` - App Service name
+     - `postgresServerName` - PostgreSQL server name
+     - `imageRepository` - Docker image repository name (project name)
+     - `environment` - Environment name (qa/prod)
+
+#### Running the Deployment Pipeline
+
+1. In Azure DevOps, go to **Pipelines** → **New pipeline**
+2. Select your repository → **Existing Azure Pipelines YAML file**
+3. Select `/azure-pipelines-example.yml`
+4. Click **Run**
+5. Select environment: `qa` or `prod`
+6. Pipeline will:
+   - Build Docker image with your application
+   - Run database migrations
+   - Push image to Container Registry
+   - Deploy to App Service
+
+**No manual variable configuration needed!** Everything is automatically populated from the variable groups.
+
+#### Manual Azure DevOps Configuration (If Needed)
+
+If you need to manually run the Azure DevOps Terraform (e.g., to update configuration without re-running infrastructure):
+
+```bash
+cd infra/azdo
+
+# Set Azure DevOps PAT
+export AZDO_PERSONAL_ACCESS_TOKEN="<your-pat>"
+
+# Create backend.hcl (use values from your variable group)
+cat > backend.hcl <<EOF
+resource_group_name  = "rg-kdg-boilerplate-tfstate"
+storage_account_name = "<your-storage-account>"
+container_name       = "tfstate"
+key                  = "kdg-boilerplate-qa-azdo.tfstate"
+use_oidc             = true
+use_azuread_auth     = true
+EOF
+
+# Run Terraform with variable groups values
+terraform init -backend-config=backend.hcl
+terraform plan \
+  -var="azdo_org_service_url=https://dev.azure.com/<org>" \
+  -var="azdo_project_name=<project>" \
+  -var="environment=qa" \
+  -var="project_name=kdg-boilerplate" \
+  -var="azure_service_connection_name=sc-arm-kdg-boilerplate" \
+  -var="tfstate_rg=rg-kdg-boilerplate-tfstate" \
+  -var="tfstate_account=<storage-account>" \
+  -var="subscription_id=<sub-id>" \
+  -var="tenant_id=<tenant-id>" \
+  -var="service_principal_id=<sp-id>" \
+  -out=tfplan
+terraform apply tfplan
+```
+
+---
+
 ### Pipeline Behavior on Subsequent Runs
 
 The infrastructure pipeline is **idempotent** - safe to run multiple times:
 
-| Step | First Run | Subsequent Runs |
-|------|-----------|-----------------|
-| Bootstrap State Storage | Creates storage infrastructure | Skips (already exists) |
-| Terraform Init | Downloads providers | Uses existing state |
-| Terraform Plan | Plans 15+ resource creations | Shows "No changes" if code unchanged |
-| Terraform Apply | Creates all resources | Only applies changes if code modified |
-| Grant Key Vault Access | Grants webapp access | Skips (already exists) |
-| App Service Config | Applies settings | Reapplies (causes brief restart) |
+| Stage | Step | First Run | Subsequent Runs |
+|-------|------|-----------|-----------------|
+| **Infra** | Bootstrap State Storage | Creates storage infrastructure | Skips (already exists) |
+| **Infra** | Terraform Init | Downloads providers | Uses existing state |
+| **Infra** | Terraform Plan | Plans 15+ resource creations | Shows "No changes" if code unchanged |
+| **Infra** | Terraform Apply | Creates all resources | Only applies changes if code modified |
+| **Infra** | Grant Key Vault Access | Grants webapp access | Skips (already exists) |
+| **Infra** | App Service Config | Applies settings | Reapplies (causes brief restart) |
+| **Azure DevOps** | Terraform Init | Downloads providers | Uses existing state |
+| **Azure DevOps** | Terraform Plan | Creates service connection & variable group | Shows "No changes" if config unchanged |
+| **Azure DevOps** | Terraform Apply | Creates Azure DevOps resources | Updates if needed |
 
 **When to re-run:**
 - After modifying Terraform code (e.g., changing SKUs, adding resources)
@@ -239,10 +336,11 @@ The infrastructure pipeline is **idempotent** - safe to run multiple times:
 
 ### Application Pipeline and Local Usage
 
-1. **Application Deployment**: Use `azure-pipelines-example.yml` as a base for building and deploying your application
-   - Update Docker registry connection
-   - Update web app names
-   - Configure environment-specific variables
+1. **Application Deployment**: The `azure-pipelines-example.yml` pipeline is fully automated
+   - All variables automatically populated from variable groups
+   - Select environment (`qa` or `prod`) when running
+   - No manual configuration needed
+   - Builds container, runs migrations, deploys to App Service
 
 2. **Local Development**:
    - Uses `appsettings.development.json` and client `.env` files
@@ -251,6 +349,7 @@ The infrastructure pipeline is **idempotent** - safe to run multiple times:
 
 3. **QA/Prod Environments**:
    - App Service reads secrets from Key Vault via managed identity
+   - Container images pulled from ACR using managed identity
    - No secrets stored in application settings or environment variables directly
    - Secrets automatically updated when Key Vault values change
 
@@ -281,6 +380,19 @@ The infrastructure pipeline is **idempotent** - safe to run multiple times:
 **Pipeline parameter not showing:**
 - Edit pipeline → Click "..." → **Triggers** → **Variables** tab to verify parameters
 
+**Azure DevOps stage fails with authentication error:**
+- Verify `AzureDevOpsPAT` variable is set in the variable group and marked as secret
+- Check PAT hasn't expired (recreate if needed)
+- Ensure PAT has required scopes: Service Connections (Read & manage), Variable Groups (Read & manage)
+
+**Azure DevOps stage fails with "project not found":**
+- Verify `AzureDevOpsOrgUrl` format: `https://dev.azure.com/<org-name>` (no trailing slash)
+- Verify `AzureDevOpsProjectName` matches exactly (case-sensitive)
+
+**Service connection or variable group already exists:**
+- Terraform will update existing resources instead of creating duplicates
+- This is expected behavior and safe
+
 ---
 
 ### Security Best Practices
@@ -290,7 +402,10 @@ The infrastructure pipeline is **idempotent** - safe to run multiple times:
 ✅ **RBAC authorization** - Key Vault uses Azure RBAC, not legacy access policies  
 ✅ **Separate environments** - QA and Prod are completely isolated  
 ✅ **Terraform state** - Stored securely in Azure Storage with RBAC  
-✅ **OIDC authentication** - Pipeline uses Workload Identity Federation (no long-lived secrets)
+✅ **OIDC authentication** - Pipeline uses Workload Identity Federation (no long-lived secrets)  
+✅ **Infrastructure as Code** - All infrastructure and Azure DevOps configuration managed via Terraform  
+✅ **Automated deployment** - No manual variable configuration reduces human error  
+✅ **PAT security** - Azure DevOps PAT stored as secret variable, only used during automation
 
 ## Site24x7 APM Integration
 
