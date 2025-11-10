@@ -25,14 +25,15 @@ builder.Services.AddSwaggerGen();
 var connectionString = builder.Configuration["ConnectionString"] ?? throw new Exception("Connection string not configured");
 
 // add DI services
-builder.Services.AddScoped<IDatabase<Npgsql.NpgsqlConnection, Npgsql.NpgsqlTransaction>>(provider => 
+builder.Services.AddScoped<IDatabase<Npgsql.NpgsqlConnection, Npgsql.NpgsqlTransaction>>(provider =>
   new KDG.Database.PostgreSQL(connectionString));
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService>(provider => new AuthService(
     builder.Configuration["Jwt:Key"] ?? throw new Exception("JWT Key not configured"),
-    builder.Configuration["Jwt:Issuer"] ?? throw new Exception("JWT Issuer not configured"), 
+    builder.Configuration["Jwt:Issuer"] ?? throw new Exception("JWT Issuer not configured"),
     builder.Configuration["Jwt:Audience"] ?? throw new Exception("JWT Audience not configured")
 ));
+builder.Services.AddScoped<ICalculatorService, CalculatorService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
