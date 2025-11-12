@@ -63,10 +63,21 @@ dotnet test
 
 ### Unit + Integration Test Setup for CI/CD
 
-To enable unit + integration tests in Azure Pipelines:
+Separate pipeline files are provided for unit and integration tests:
 
-1. Uncomment the `UnitTests` and `IntegrationTests` jobs in `azure-pipelines-example.yml`
-2. The pipeline will automatically use inline credentials - no additional configuration needed!
+1. **Unit Tests**: Use `azure-pipelines-unit-tests.yml`
+   - Set to `trigger: none` and `pr: none` (update as needed to automatically trigger)
+   - Runs unit tests with code coverage collection
+   - Publishes test results and code coverage
+
+2. **Integration Tests**: Use `azure-pipelines-integration-tests.yml`
+   - Set to `trigger: none` and `pr: none` (update as needed to automatically trigger)
+   - Uses Testcontainers to automatically spin up PostgreSQL containers
+   - Runs integration tests with code coverage collection
+   - Publishes test results and code coverage
+   - No additional configuration needed - Testcontainers handles everything!
+
+**Note**: Both test pipeline files are configured to not auto-trigger. They can be run manually or triggered via pipeline dependencies in your main build/deploy pipeline.
 
 ## Site24x7 APM Integration
 

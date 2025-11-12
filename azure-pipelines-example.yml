@@ -14,88 +14,10 @@ variables:
   tag: 'latest'
   vmImageName: 'ubuntu-latest'
 
-parameters:
-- name: skipUnitTests
-  displayName: 'Skip Unit Tests'
-  type: boolean
-  default: false
-- name: skipIntegrationTests
-  displayName: 'Skip Integration Tests'
-  type: boolean
-  default: false
-
 stages:
 - stage: Build
   jobs:
-  # Uncomment the following jobs to enable testing in your pipeline
-  # - job: UnitTests
-  #   displayName: 'Run Unit Tests'
-  #   condition: eq(${{ parameters.skipUnitTests }}, false)
-  #   pool:
-  #     vmImage: '$(vmImageName)'
-  #   steps:
-  #   - task: DotNetCoreCLI@2
-  #     displayName: 'Run Unit Tests'
-  #     inputs:
-  #       command: 'test'
-  #       projects: '**/KDG.UnitTests.csproj'
-  #       arguments: '--collect "Code Coverage" --settings "./coverage.runsettings"'
-  #       publishTestResults: true
-  #       publishCodeCoverage: true
-
-  # - job: IntegrationTests
-  #   displayName: 'Run Integration Tests'
-  #   dependsOn: UnitTests
-  #   condition: |
-  #     and(
-  #       eq(${{ parameters.skipIntegrationTests }}, false),
-  #       in(dependencies.UnitTests.result, 'Succeeded', 'Skipped')
-  #     )
-  #   pool:
-  #     vmImage: '$(vmImageName)'
-  #   services:
-  #     postgres:
-  #       image: postgres:16
-  #       env:
-  #         POSTGRES_USER: postgres
-  #         POSTGRES_PASSWORD: postgres
-  #         POSTGRES_DB: kdg-integration-test
-  #       ports:
-  #         - 5432:5432
-  #       options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-  #   
-  #   steps:
-  #   # Run database migrations
-  #   - task: DotNetCoreCLI@2
-  #     displayName: 'Run Database Migrations'
-  #     inputs:
-  #       command: 'run'
-  #       projects: 'Migrations/Migrations.csproj'
-  #       arguments: '--configuration Release'
-  #     env:
-  #       CONNECTION_STRING: 'Host=localhost;Port=5432;Database=kdg-integration-test;Username=postgres;Password=postgres'
-
-  #   # Run Integration Tests
-  #   - task: DotNetCoreCLI@2
-  #     displayName: 'Run Integration Tests'
-  #     inputs:
-  #       command: 'test'
-  #       projects: '**/KDG.IntegrationTests.csproj'
-  #       arguments: '--verbosity normal --logger trx --collect:"XPlat Code Coverage"'
-  #       publishTestResults: true
-  #     env:
-  #       ASPNETCORE_ENVIRONMENT: 'Test'
-
   - job: Build
-    # Uncomment the following line when enabling test jobs above
-    # dependsOn: 
-    #   - UnitTests
-    #   - IntegrationTests
-    # condition: |
-    #   and(
-    #     notIn(dependencies.UnitTests.result, 'Canceled', 'Failed'),
-    #     notIn(dependencies.IntegrationTests.result, 'Canceled', 'Failed')
-    #   )
     pool:
       vmImage: '$(vmImageName)'
     steps:

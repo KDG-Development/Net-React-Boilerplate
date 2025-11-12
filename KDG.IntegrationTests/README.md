@@ -55,7 +55,7 @@ dotnet test --verbosity normal
 
 ### 2. Docker Compose (Full Environment)
 
-**Uses**: Docker Compose with explicit PostgreSQL service  
+**Uses**: Testcontainers (via Docker socket mount)  
 **Best for**: Testing the full stack, consistent with production environment
 
 ```bash
@@ -67,45 +67,55 @@ docker compose --profile integration-test down -v
 ```
 
 **How it works**:
-- Explicit PostgreSQL service on port 5454
-- Migrations run as a separate service with inline connection string
-- Tests run in a container
-- Database uses tmpfs (in-memory, destroyed after tests)
+- Tests run in a container with Docker socket mounted (`/var/run/docker.sock`)
+- Testcontainers automatically spins up a PostgreSQL 16 container
+- Runs migrations from `Migrations/scripts/`
+- Executes tests against the temporary database
+- Cleans up containers automatically
+
+**Requirements**:
+- Docker socket must be accessible (mounted in docker-compose.yml)
+- Docker Desktop or Docker Engine running
+- Resource Reaper (ryuk) is disabled via `TESTCONTAINERS_RYUK_DISABLED=true` environment variable for Docker-in-Docker compatibility
 
 ### 3. Azure Pipelines CI/CD (Automated)
 
-**Uses**: Service containers  
+**Uses**: Testcontainers  
 **Best for**: CI/CD, automated testing on push
 
 **How it works**:
-- Azure Pipelines starts a PostgreSQL service container (localhost:5432)
-- Tests automatically detect CI environment (`AGENT_ID` env var)
-- Uses existing service container instead of spinning up Testcontainers
-- Migrations run directly against service container
-- Fastest option for CI/CD
+- Uses `azure-pipelines-integration-tests.yml` pipeline file
+- Testcontainers automatically spins up a PostgreSQL container
+- Runs migrations automatically
+- Executes tests against the temporary database
+- Cleans up containers automatically
 
 **Advantages**:
-✅ No Testcontainers overhead in CI  
-✅ Reuses existing PostgreSQL service  
-✅ Integrated with Azure Pipelines workflow  
+✅ Consistent approach across all environments  
+✅ Automatic cleanup via Testcontainers  
+✅ No service containers needed  
 ✅ No configuration files needed - uses inline credentials
 
-## Environment Detection
+**Pipeline Configuration**:
+- Pipeline file: `azure-pipelines-integration-tests.yml`
+- Set to `trigger: none` and `pr: none` (manual/triggered runs only)
+- Docker is available by default in Azure Pipelines agents
 
-The test infrastructure automatically detects which environment it's running in:
+## Consistent Testcontainers Usage
 
-### Priority Order:
-1. **Azure Pipelines Service Container**: If `AGENT_ID` or `TF_BUILD` env var exists and PostgreSQL available on localhost:5432
-2. **Docker Compose**: If PostgreSQL is accessible at `integration-test-db:5432`
-3. **Testcontainers**: Fallback - spin up automatic PostgreSQL container
+All execution modes use Testcontainers for database management:
 
-This ensures optimal performance in each scenario without any configuration changes or setup files.
+- **Local `dotnet test`**: Testcontainers spins up PostgreSQL automatically
+- **Docker Compose**: Testcontainers works via Docker socket mount
+- **Azure Pipelines**: Testcontainers spins up PostgreSQL in CI environment
+
+This ensures consistent behavior across all environments without any configuration changes or setup files.
 
 ## No Configuration Required
 
 Integration tests use inline credentials directly in the code. Since test databases are temporary and cleaned up after tests, hardcoded test credentials are acceptable and significantly reduce setup complexity:
 
-- **Connection strings**: Hardcoded for each environment (Testcontainers, Docker Compose, Azure Pipelines)
+- **Connection strings**: Hardcoded for Testcontainers (all environments use the same approach)
 - **JWT settings**: Default test values built into the test infrastructure
 - **Zero setup**: Just run `dotnet test` - no config files needed!
 
@@ -113,5 +123,5 @@ Integration tests use inline credentials directly in the code. Since test databa
 
 - [Testcontainers Documentation](https://dotnet.testcontainers.org/)
 - [xUnit Documentation](https://xunit.net/)
-- [Azure Pipelines Service Containers](https://docs.microsoft.com/en-us/azure/devops/pipelines/process/service-containers)
+- [Azure Pipelines Documentation](https://docs.microsoft.com/en-us/azure/devops/pipelines/)
 
