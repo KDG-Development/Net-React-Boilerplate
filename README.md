@@ -61,16 +61,12 @@ dotnet test
 6. Create a pipeline in azure devops with the azure-pipelines.[environment].yml file
 7. Ensure you have Continuous deployment enabled in the azure portal for your web app
 
-### Integration Test Configuration for CI/CD
+### Unit + Integration Test Setup for CI/CD
 
-To enable integration tests in Azure Pipelines:
+To enable unit + integration tests in Azure Pipelines:
 
-1. Copy `KDG.IntegrationTests/appsettings.json` to `KDG.IntegrationTests/appsettings.IntegrationAzure.json`
-2. Fill in the required values (ConnectionString, Jwt settings, etc.)
-3. Upload `appsettings.IntegrationAzure.json` to Azure DevOps Secure Files
-4. Uncomment the `IntegrationTests` job in `azure-pipelines-example.yml`
-
-**Note**: Integration test appsettings files are gitignored and should not be committed to the repository.
+1. Uncomment the `UnitTests` and `IntegrationTests` jobs in `azure-pipelines-example.yml`
+2. The pipeline will automatically use inline credentials - no additional configuration needed!
 
 ## Site24x7 APM Integration
 

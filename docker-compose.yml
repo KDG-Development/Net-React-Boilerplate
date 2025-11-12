@@ -141,12 +141,12 @@ services:
         - BUILD_CONFIGURATION=Development
     volumes:
       - ./Migrations:/src/Migrations
-      - ./KDG.IntegrationTests/appsettings.IntegrationLocal.json:/src/appsettings.json:ro
       # Prevent sync of build artifacts
       - /src/Migrations/bin/
       - /src/Migrations/obj/
     environment:
       - ASPNETCORE_ENVIRONMENT=Test
+      - CONNECTION_STRING=Host=integration-test-db;Port=5432;Database=kdg-integration-test;Username=postgres;Password=postgres
     command: dotnet run --project /src/Migrations/Migrations.csproj
     depends_on:
       integration-test-db:

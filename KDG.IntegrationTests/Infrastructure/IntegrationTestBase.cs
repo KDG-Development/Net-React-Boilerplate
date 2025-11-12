@@ -34,22 +34,11 @@ public abstract class IntegrationTestBase : IClassFixture<DatabaseTestFixture>
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                // Default JWT settings (can be overridden by config files)
+                // Default JWT settings for integration tests
                 ["Jwt:Key"] = "test-jwt-key-for-integration-tests",
                 ["Jwt:Issuer"] = "kdg-boilerplate-api-test",
                 ["Jwt:Audience"] = "kdg-boilerplate-client-test"
             });
-        
-        // Try to load config files if they exist (Docker Compose scenario)
-        // These are now optional - Testcontainers doesn't need them
-        var localConfigPath = Path.Combine(Directory.GetCurrentDirectory(), "appsettings.IntegrationLocal.json");
-        var azureConfigPath = Path.Combine(Directory.GetCurrentDirectory(), "appsettings.IntegrationAzure.json");
-        
-        if (File.Exists(localConfigPath)) {
-            builder.AddJsonFile("appsettings.IntegrationLocal.json", optional: true);
-        } else if (File.Exists(azureConfigPath)) {
-            builder.AddJsonFile("appsettings.IntegrationAzure.json", optional: true);
-        }
         
         return builder.Build();
     }

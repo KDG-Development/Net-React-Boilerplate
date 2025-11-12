@@ -68,11 +68,9 @@ docker compose --profile integration-test down -v
 
 **How it works**:
 - Explicit PostgreSQL service on port 5454
-- Migrations run as a separate service
+- Migrations run as a separate service with inline connection string
 - Tests run in a container
 - Database uses tmpfs (in-memory, destroyed after tests)
-
-**Configuration**: `appsettings.IntegrationLocal.json` is **required** for Docker Compose (see Setup Instructions below)
 
 ### 3. Azure Pipelines CI/CD (Automated)
 
@@ -90,8 +88,7 @@ docker compose --profile integration-test down -v
 ✅ No Testcontainers overhead in CI  
 ✅ Reuses existing PostgreSQL service  
 ✅ Integrated with Azure Pipelines workflow  
-
-**Configuration**: Pipeline downloads `appsettings.IntegrationAzure.json` from secure files
+✅ No configuration files needed - uses inline credentials
 
 ## Environment Detection
 
@@ -99,47 +96,18 @@ The test infrastructure automatically detects which environment it's running in:
 
 ### Priority Order:
 1. **Azure Pipelines Service Container**: If `AGENT_ID` or `TF_BUILD` env var exists and PostgreSQL available on localhost:5432
-2. **Docker Compose**: If `appsettings.IntegrationLocal.json` exists and database is accessible
+2. **Docker Compose**: If PostgreSQL is accessible at `integration-test-db:5432`
 3. **Testcontainers**: Fallback - spin up automatic PostgreSQL container
 
-This ensures optimal performance in each scenario without configuration changes.
+This ensures optimal performance in each scenario without any configuration changes or setup files.
 
-## Configuration Files
+## No Configuration Required
 
-Integration tests use a template file (`appsettings.json`) as a reference. Configuration files are not committed to the repository.
+Integration tests use inline credentials directly in the code. Since test databases are temporary and cleaned up after tests, hardcoded test credentials are acceptable and significantly reduce setup complexity:
 
-### Setup Instructions
-
-1. **For Docker Compose** (required):
-   ```bash
-   cd KDG.IntegrationTests
-   cp appsettings.json appsettings.IntegrationLocal.json
-   ```
-   Fill in with connection to `integration-test-db` service:
-   ```json
-   {
-     "ConnectionString": "Host=integration-test-db;Port=5432;Database=kdg-integration-test;Username=postgres;Password=postgres",
-     "Jwt": { "Key": "...", "Issuer": "...", "Audience": "..." },
-     "Logging": { "LogLevel": { "Default": "Information", "Microsoft.AspNetCore": "Warning" } }
-   }
-   ```
-
-2. **For Azure Pipelines CI/CD** (required):
-   ```bash
-   cd KDG.IntegrationTests
-   cp appsettings.json appsettings.IntegrationAzure.json
-   ```
-   Fill in with localhost:5432 connection for service container:
-   ```json
-   {
-     "ConnectionString": "Host=localhost;Port=5432;Database=kdg-integration-test;Username=postgres;Password=postgres",
-     "Jwt": { "Key": "...", "Issuer": "...", "Audience": "..." },
-     "Logging": { "LogLevel": { "Default": "Information", "Microsoft.AspNetCore": "Warning" } }
-   }
-   ```
-   Then upload `appsettings.IntegrationAzure.json` to Azure DevOps Secure Files.
-
-**Note**: `appsettings.IntegrationLocal.json` is **required** for Docker Compose (the `integration-test-migrations` service mounts it as a volume). For `dotnet test`, both files are optional - Testcontainers provides connection string automatically. These files are gitignored and should not be committed to the repository.
+- **Connection strings**: Hardcoded for each environment (Testcontainers, Docker Compose, Azure Pipelines)
+- **JWT settings**: Default test values built into the test infrastructure
+- **Zero setup**: Just run `dotnet test` - no config files needed!
 
 ## Further Reading
 

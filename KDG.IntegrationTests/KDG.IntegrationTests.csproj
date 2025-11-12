@@ -35,12 +35,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>scripts\%(Filename)%(Extension)</TargetPath>
     </Content>
-    <Content Include="appsettings.IntegrationLocal.json" Condition="Exists('appsettings.IntegrationLocal.json')">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="appsettings.IntegrationAzure.json" Condition="Exists('appsettings.IntegrationAzure.json')">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 
 </Project>

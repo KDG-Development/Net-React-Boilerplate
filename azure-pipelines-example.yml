@@ -65,30 +65,6 @@ stages:
   #       options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
   #   
   #   steps:
-  #   # Download integration test appsettings
-  #   - task: DownloadSecureFile@1
-  #     displayName: 'Download integration test appsettings'
-  #     name: integrationAppSettings
-  #     inputs:
-  #       secureFile: 'appsettings.IntegrationAzure.json'
-
-  #   # Copy integration test appsettings to test project
-  #   - task: CopyFiles@2
-  #     displayName: 'Copy integration test appsettings'
-  #     inputs:
-  #       sourceFolder: '$(Agent.TempDirectory)'
-  #       contents: 'appsettings.IntegrationAzure.json'
-  #       targetFolder: '$(Build.SourcesDirectory)/KDG.IntegrationTests'
-  #       overWrite: true
-
-  #   # Copy integration appsettings to project root (required by Migrations.csproj)
-  #   - task: Bash@3
-  #     displayName: 'Copy appsettings for migrations'
-  #     inputs:
-  #       targetType: 'inline'
-  #       script: |
-  #         cp $(Build.SourcesDirectory)/KDG.IntegrationTests/appsettings.IntegrationAzure.json $(Build.SourcesDirectory)/appsettings.json
-
   #   # Run database migrations
   #   - task: DotNetCoreCLI@2
   #     displayName: 'Run Database Migrations'
@@ -96,6 +72,8 @@ stages:
   #       command: 'run'
   #       projects: 'Migrations/Migrations.csproj'
   #       arguments: '--configuration Release'
+  #     env:
+  #       CONNECTION_STRING: 'Host=localhost;Port=5432;Database=kdg-integration-test;Username=postgres;Password=postgres'
 
   #   # Run Integration Tests
   #   - task: DotNetCoreCLI@2

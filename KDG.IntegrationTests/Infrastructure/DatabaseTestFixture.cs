@@ -1,7 +1,6 @@
 using System.Data;
 using Dapper;
 using DotNet.Testcontainers.Builders;
-using Microsoft.Extensions.Configuration;
 using Npgsql;
 using Testcontainers.PostgreSql;
 using Xunit;
@@ -94,38 +93,14 @@ public class DatabaseTestFixture : IAsyncLifetime
     
     private string? TryGetDockerComposeConnectionString()
     {
-        // Try to read from config files (Docker Compose scenario)
-        var localConfigPath = Path.Combine(Directory.GetCurrentDirectory(), "appsettings.IntegrationLocal.json");
-        var azureConfigPath = Path.Combine(Directory.GetCurrentDirectory(), "appsettings.IntegrationAzure.json");
-        
-        string? configFile = null;
-        if (File.Exists(localConfigPath)) {
-            configFile = localConfigPath;
-        } else if (File.Exists(azureConfigPath)) {
-            configFile = azureConfigPath;
-        }
-        
-        if (configFile == null) {
-            return null;
-        }
+        // Docker Compose integration-test-db service connection string
+        var connectionString = "Host=integration-test-db;Port=5432;Database=kdg-integration-test;Username=postgres;Password=postgres";
         
         try {
-            var configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile(Path.GetFileName(configFile), optional: true)
-                .Build();
-            
-            var connectionString = configuration.GetConnectionString("DefaultConnection") ?? 
-                                   configuration["ConnectionString"];
-            if (string.IsNullOrEmpty(connectionString)) {
-                return null;
-            }
-            
             // Test if the connection works
             using var connection = new NpgsqlConnection(connectionString);
             connection.Open();
             connection.Close();
-            
             return connectionString;
         } catch {
             return null;
