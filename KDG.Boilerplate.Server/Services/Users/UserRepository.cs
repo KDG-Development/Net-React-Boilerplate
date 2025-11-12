@@ -27,8 +27,8 @@ public class UserRepository : IUserRepository {
             select
                 u.id,
                 u.email,
-                array_agg(distinct upg.permission_group) filter (where upg.permission_group is not null) as permission_groups,
-                array_agg(distinct p.permission) filter (where p.permission is not null) as permissions
+                coalesce(array_agg(distinct upg.permission_group) filter (where upg.permission_group is not null), ARRAY[]::text[]) as permission_groups,
+                coalesce(array_agg(distinct p.permission) filter (where p.permission is not null), ARRAY[]::text[]) as permissions
             from users u
             left join user_permission_groups upg on upg.user_id = u.id
             left join permission_group_permissions pgp on pgp.permission_group = upg.permission_group
