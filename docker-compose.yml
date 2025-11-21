@@ -10,6 +10,9 @@ services:
     volumes:
       - ./Migrations:/src/Migrations
       - ./appsettings.${ENVIRONMENT:-Development}.json:/src/appsettings.json:ro
+      # Prevent sync of build artifacts
+      - /src/Migrations/bin/
+      - /src/Migrations/obj/
     environment:
       - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT:-Development}
     command: dotnet run --project /src/Migrations/Migrations.csproj
@@ -84,6 +87,57 @@ services:
       - "5442:5432"
     volumes:
       - postgres_data_kdg-boilerplate:/var/lib/postgresql/data
+
+  unit-test:
+    profiles: ["test"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: build
+      args:
+        - BUILD_CONFIGURATION=Development
+    volumes:
+      - ./KDG.Boilerplate.Server:/src/KDG.Boilerplate.Server
+      - ./KDG.UnitTests:/src/KDG.UnitTests
+      # Prevent sync of build artifacts
+      - /src/KDG.Boilerplate.Server/bin/
+      - /src/KDG.Boilerplate.Server/obj/
+      - /src/KDG.UnitTests/bin/
+      - /src/KDG.UnitTests/obj/
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    working_dir: /src
+    entrypoint: ["dotnet"]
+    command: ["test", "KDG.UnitTests/KDG.UnitTests.csproj", "--verbosity", "normal"]
+
+  integration-test:
+    profiles: ["integration-test"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: build
+      args:
+        - BUILD_CONFIGURATION=Development
+    network_mode: bridge
+    volumes:
+      - ./KDG.Boilerplate.Server:/src/KDG.Boilerplate.Server
+      - ./KDG.IntegrationTests:/src/KDG.IntegrationTests
+      - ./Migrations:/src/Migrations
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Prevent sync of build artifacts
+      - /src/KDG.Boilerplate.Server/bin/
+      - /src/KDG.Boilerplate.Server/obj/
+      - /src/KDG.IntegrationTests/bin/
+      - /src/KDG.IntegrationTests/obj/
+      - /src/Migrations/bin/
+      - /src/Migrations/obj/
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Test
+      - ASPNETCORE_URLS=http://+:5260
+      - TESTCONTAINERS_RYUK_DISABLED=true
+    working_dir: /src
+    entrypoint: ["dotnet"]
+    command: ["test", "KDG.IntegrationTests/KDG.IntegrationTests.csproj", "--verbosity", "normal"]
 
 volumes:
   postgres_data_kdg-boilerplate:

@@ -1,0 +1,27 @@
+trigger: none
+pr: none
+
+variables:
+  vmImageName: 'ubuntu-latest'
+
+stages:
+- stage: IntegrationTests
+  jobs:
+  - job: IntegrationTests
+    displayName: 'Run Integration Tests'
+    pool:
+      vmImage: '$(vmImageName)'
+    steps:
+    # Run Integration Tests using Testcontainers
+    # Testcontainers will automatically spin up a PostgreSQL container
+    - task: DotNetCoreCLI@2
+      displayName: 'Run Integration Tests'
+      inputs:
+        command: 'test'
+        projects: '**/KDG.IntegrationTests.csproj'
+        arguments: '--verbosity normal --logger trx --collect:"XPlat Code Coverage"'
+        publishTestResults: true
+        publishCodeCoverage: true
+      env:
+        ASPNETCORE_ENVIRONMENT: 'Test'
+

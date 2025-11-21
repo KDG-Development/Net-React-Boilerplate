@@ -25,6 +25,21 @@ docker compose --profile app up --build
 
 > After startup (profile: app): Frontend https://localhost:5173, API https://localhost:5261
 
+# Running Tests
+
+## Unit Tests
+```bash
+cd KDG.UnitTests
+dotnet test
+```
+
+## Integration Tests
+Open Docker.
+```bash
+cd KDG.IntegrationTests
+dotnet test
+```
+
 # Creating a Project Based on Boilerplate
 
 1. Initialize project repository
@@ -45,6 +60,24 @@ docker compose --profile app up --build
 5. Update the azure-pipelines.[environment].yml file with the appropriate variable values, and values enclosed in square brackets
 6. Create a pipeline in azure devops with the azure-pipelines.[environment].yml file
 7. Ensure you have Continuous deployment enabled in the azure portal for your web app
+
+### Unit + Integration Test Setup for CI/CD
+
+Separate pipeline files are provided for unit and integration tests:
+
+1. **Unit Tests**: Use `azure-pipelines-unit-tests.yml`
+   - Set to `trigger: none` and `pr: none` (update as needed to automatically trigger)
+   - Runs unit tests with code coverage collection
+   - Publishes test results and code coverage
+
+2. **Integration Tests**: Use `azure-pipelines-integration-tests.yml`
+   - Set to `trigger: none` and `pr: none` (update as needed to automatically trigger)
+   - Uses Testcontainers to automatically spin up PostgreSQL containers
+   - Runs integration tests with code coverage collection
+   - Publishes test results and code coverage
+   - No additional configuration needed - Testcontainers handles everything!
+
+**Note**: Both test pipeline files are configured to not auto-trigger. They can be run manually or triggered via pipeline dependencies in your main build/deploy pipeline.
 
 ## Site24x7 APM Integration
 

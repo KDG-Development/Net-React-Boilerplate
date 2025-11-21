@@ -22,13 +22,13 @@ public class UserRepository : IUserRepository {
     }
     
     public async Task<User?> UserLogin(UserAuth authPayload) {
-    return await _database.withConnection(async connection => {
+    return await _database.WithConnection(async connection => {
         var sql = @"
             select
                 u.id,
                 u.email,
-                array_agg(distinct upg.permission_group) filter (where upg.permission_group is not null) as permission_groups,
-                array_agg(distinct p.permission) filter (where p.permission is not null) as permissions
+                coalesce(array_agg(distinct upg.permission_group) filter (where upg.permission_group is not null), ARRAY[]::text[]) as permission_groups,
+                coalesce(array_agg(distinct p.permission) filter (where p.permission is not null), ARRAY[]::text[]) as permissions
             from users u
             left join user_permission_groups upg on upg.user_id = u.id
             left join permission_group_permissions pgp on pgp.permission_group = upg.permission_group
@@ -48,11 +48,11 @@ public class UserRepository : IUserRepository {
             Email = result.Email,
             PermissionGroups =
                 new HashSet<PermissionGroupBase>(
-                    result.PermissionGroups.Select(group => new PermissionGroupBase(group))
+                    (result.PermissionGroups ?? []).Select(group => new PermissionGroupBase(group))
                 ),
             Permissions =
                 new HashSet<PermissionBase>(
-                    result.Permissions.Select(permission => new PermissionBase(permission))
+                    (result.Permissions ?? []).Select(permission => new PermissionBase(permission))
                 ),
         };
     });

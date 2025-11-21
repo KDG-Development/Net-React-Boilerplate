@@ -1,0 +1,23 @@
+trigger: none
+pr: none
+
+variables:
+  vmImageName: 'ubuntu-latest'
+
+stages:
+- stage: UnitTests
+  jobs:
+  - job: UnitTests
+    displayName: 'Run Unit Tests'
+    pool:
+      vmImage: '$(vmImageName)'
+    steps:
+    - task: DotNetCoreCLI@2
+      displayName: 'Run Unit Tests'
+      inputs:
+        command: 'test'
+        projects: '**/KDG.UnitTests.csproj'
+        arguments: '--collect "Code Coverage" --settings "./coverage.runsettings"'
+        publishTestResults: true
+        publishCodeCoverage: true
+

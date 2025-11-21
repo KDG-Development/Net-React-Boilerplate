@@ -26,7 +26,7 @@ stages:
       displayName: 'Download appsettings'
       name: appSettings
       inputs:
-        secureFile: 'appsettings.${environment}.json'
+        secureFile: 'appsettings.$(environment).json'
 
 
     # Copy config files to build context
@@ -35,7 +35,7 @@ stages:
       inputs:
         sourceFolder: '$(Agent.TempDirectory)'
         contents: |
-          appsettings.${environment}.json
+          appsettings.$(environment).json
         targetFolder: '$(Build.SourcesDirectory)'
         overWrite: true
 
@@ -45,7 +45,7 @@ stages:
       inputs:
         targetType: 'inline'
         script: |
-          mv $(Build.SourcesDirectory)/appsettings.${environment}.json $(Build.SourcesDirectory)/appsettings.json
+          mv $(Build.SourcesDirectory)/appsettings.$(environment).json $(Build.SourcesDirectory)/appsettings.json
 
     # Build the image with the production target stage
     - task: Docker@2
