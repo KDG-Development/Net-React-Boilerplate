@@ -1,0 +1,268 @@
+trigger:
+  branches:
+    include: [ main, qa, prod, master ]
+
+parameters:
+  - name: environment
+    type: string
+    default: qa
+    values: [ qa, prod ]
+  - name: projectName
+    type: string
+    default: kdg-boilerplate
+  - name: location
+    type: string
+    default: eastus
+
+variables:
+  # Update the group names below to match your Library → Variable groups names
+  - ${{ if eq(parameters.environment, 'qa') }}:
+    - group: qa-infra-vars
+  - ${{ if eq(parameters.environment, 'prod') }}:
+    - group: prod-infra-vars
+  - name: ProjectName
+    value: ${{ parameters.projectName }}
+  - name: Location
+    value: ${{ parameters.location }}
+
+stages:
+  - stage: Infra
+    displayName: Provision Infrastructure
+    jobs:
+      - job: Terraform
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: TerraformInstaller@1
+            inputs:
+              terraformVersion: '1.7.5'
+
+          - task: AzureCLI@2
+            displayName: Bootstrap Terraform State Storage
+            inputs:
+              azureSubscription: '$(AzureServiceConnection)'
+              scriptType: bash
+              scriptLocation: inlineScript
+              addSpnToEnvironment: true
+              inlineScript: |
+                set -euo pipefail
+                
+                RG_NAME="$(TFSTATE_RG)"
+                STORAGE_ACCOUNT_NAME="$(TFSTATE_ACCOUNT)"
+                CONTAINER_NAME="$(TFSTATE_CONTAINER)"
+                LOCATION="eastus"
+                
+                echo "Checking if storage account exists..."
+                
+                # Check if resource group exists, create if not
+                if ! az group show --name "$RG_NAME" &>/dev/null; then
+                  echo "Creating resource group: $RG_NAME"
+                  az group create --name "$RG_NAME" --location "$LOCATION"
+                else
+                  echo "Resource group already exists: $RG_NAME"
+                fi
+                
+                # Check if storage account exists, create if not
+                if ! az storage account show --name "$STORAGE_ACCOUNT_NAME" --resource-group "$RG_NAME" &>/dev/null; then
+                  echo "Creating storage account: $STORAGE_ACCOUNT_NAME"
+                  az storage account create \
+                    --name "$STORAGE_ACCOUNT_NAME" \
+                    --resource-group "$RG_NAME" \
+                    --location "$LOCATION" \
+                    --sku Standard_LRS \
+                    --kind StorageV2 \
+                    --allow-blob-public-access false \
+                    --min-tls-version TLS1_2
+                  
+                  echo "Storage account created successfully!"
+                  echo "Note: Storage Blob Data Contributor role must be granted manually to service principal"
+                else
+                  echo "Storage account already exists: $STORAGE_ACCOUNT_NAME"
+                fi
+                
+                # Check if container exists, create if not
+                if ! az storage container show --name "$CONTAINER_NAME" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode login &>/dev/null; then
+                  echo "Creating container: $CONTAINER_NAME"
+                  az storage container create \
+                    --name "$CONTAINER_NAME" \
+                    --account-name "$STORAGE_ACCOUNT_NAME" \
+                    --auth-mode login
+                else
+                  echo "Container already exists: $CONTAINER_NAME"
+                fi
+                
+                echo "Terraform state storage is ready!"
+
+          - script: |
+              set -e
+              cat > backend.hcl <<EOF
+              resource_group_name  = "$(TFSTATE_RG)"
+              storage_account_name = "$(TFSTATE_ACCOUNT)"
+              container_name       = "$(TFSTATE_CONTAINER)"
+              key                  = "$(ProjectName)-${{ parameters.environment }}.tfstate"
+              use_oidc             = true
+              use_azuread_auth     = true
+              EOF
+            displayName: Create backend.hcl
+
+          - task: AzureCLI@2
+            displayName: Terraform init/plan/apply
+            inputs:
+              azureSubscription: '$(AzureServiceConnection)'
+              scriptType: bash
+              scriptLocation: inlineScript
+              addSpnToEnvironment: true
+              inlineScript: |
+                set -eo pipefail
+                
+                # Export OIDC authentication variables for Terraform
+                export ARM_CLIENT_ID="${servicePrincipalId}"
+                export ARM_TENANT_ID="${tenantId}"
+                export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+                export ARM_USE_OIDC=true
+                if [ -n "${idToken:-}" ]; then
+                  export ARM_OIDC_TOKEN="${idToken}"
+                fi
+                
+                # Export Terraform variables as environment variables
+                # Using heredoc to avoid special character issues in passwords
+                export TF_VAR_project_name='$(ProjectName)'
+                export TF_VAR_environment='${{ parameters.environment }}'
+                export TF_VAR_location='$(Location)'
+                export TF_VAR_postgres_admin_password='$(PostgresAdminPassword)'
+                
+                cd infra/env
+                terraform init -backend-config=../../backend.hcl
+                terraform plan -out=tfplan
+                terraform apply -auto-approve tfplan
+                terraform output -json > ../../tf-output.json
+
+          - task: AzureCLI@2
+            displayName: Apply Key Vault references to App Service
+            inputs:
+              azureSubscription: '$(AzureServiceConnection)'
+              scriptType: bash
+              scriptLocation: inlineScript
+              addSpnToEnvironment: true
+              inlineScript: |
+                set -eo pipefail
+                
+                echo "Reading Terraform outputs..."
+                KV_NAME=$(jq -r .kv.value.name < tf-output.json)
+                KV_ID=$(jq -r .kv.value.id < tf-output.json)
+                RG=$(jq -r .webapp.value.rg < tf-output.json)
+                WEBAPP=$(jq -r .webapp.value.name < tf-output.json)
+                ACR_NAME=$(jq -r .acr.value.name < tf-output.json)
+                ACR_LOGIN_SERVER=$(jq -r .acr.value.login_server < tf-output.json)
+                ENV='${{ parameters.environment }}'
+                
+                echo "Key Vault: $KV_NAME"
+                echo "Resource Group: $RG"
+                echo "Web App: $WEBAPP"
+                echo "Container Registry: $ACR_NAME ($ACR_LOGIN_SERVER)"
+                
+                # Get webapp managed identity principal ID
+                echo "Getting webapp managed identity..."
+                WEBAPP_PRINCIPAL_ID=$(az webapp identity show --resource-group "$RG" --name "$WEBAPP" --query principalId -o tsv)
+                echo "Webapp Principal ID: $WEBAPP_PRINCIPAL_ID"
+                
+                ACR_ID=$(jq -r .acr.value.id < tf-output.json)
+                
+                echo ""
+                echo "==================================================================="
+                echo "Granting Permissions to Webapp Managed Identity"
+                echo "==================================================================="
+                
+                # Try to grant Key Vault access automatically
+                echo "Attempting to grant Key Vault Secrets User role..."
+                if az role assignment create \
+                  --assignee-object-id "$WEBAPP_PRINCIPAL_ID" \
+                  --assignee-principal-type ServicePrincipal \
+                  --role "Key Vault Secrets User" \
+                  --scope "$KV_ID" 2>/dev/null; then
+                  echo "✅ Successfully granted Key Vault access"
+                else
+                  EXIT_CODE=$?
+                  if [ $EXIT_CODE -eq 0 ] || az role assignment list --assignee "$WEBAPP_PRINCIPAL_ID" --scope "$KV_ID" --role "Key Vault Secrets User" --query "[0]" -o tsv &>/dev/null; then
+                    echo "✅ Key Vault access already exists"
+                  else
+                    echo "⚠️  Could not automatically grant Key Vault access (insufficient permissions)"
+                    echo ""
+                    echo "MANUAL STEP REQUIRED - Run this command:"
+                    echo "az role assignment create \\"
+                    echo "  --assignee-object-id $WEBAPP_PRINCIPAL_ID \\"
+                    echo "  --assignee-principal-type ServicePrincipal \\"
+                    echo "  --role \"Key Vault Secrets User\" \\"
+                    echo "  --scope \"$KV_ID\""
+                  fi
+                fi
+                
+                echo ""
+                echo "Attempting to grant AcrPull role..."
+                if az role assignment create \
+                  --assignee-object-id "$WEBAPP_PRINCIPAL_ID" \
+                  --assignee-principal-type ServicePrincipal \
+                  --role "AcrPull" \
+                  --scope "$ACR_ID" 2>/dev/null; then
+                  echo "✅ Successfully granted ACR pull access"
+                else
+                  EXIT_CODE=$?
+                  if [ $EXIT_CODE -eq 0 ] || az role assignment list --assignee "$WEBAPP_PRINCIPAL_ID" --scope "$ACR_ID" --role "AcrPull" --query "[0]" -o tsv &>/dev/null; then
+                    echo "✅ ACR pull access already exists"
+                  else
+                    echo "⚠️  Could not automatically grant ACR access (insufficient permissions)"
+                    echo ""
+                    echo "MANUAL STEP REQUIRED - Run this command:"
+                    echo "az role assignment create \\"
+                    echo "  --assignee-object-id $WEBAPP_PRINCIPAL_ID \\"
+                    echo "  --assignee-principal-type ServicePrincipal \\"
+                    echo "  --role \"AcrPull\" \\"
+                    echo "  --scope \"$ACR_ID\""
+                  fi
+                fi
+                
+                echo "==================================================================="
+                echo ""
+                
+                echo "Waiting for permission changes to propagate..."
+                sleep 15
+                
+                # Get secret URIs
+                echo "Getting Key Vault secret URIs..."
+                conn_uri=$(az keyvault secret show --vault-name "$KV_NAME" --name "postgres-connection-string-$ENV" --query id -o tsv)
+                jwt_uri=$(az keyvault secret show --vault-name "$KV_NAME" --name "jwt-key-$ENV" --query id -o tsv)
+                issuer=$(az keyvault secret show --vault-name "$KV_NAME" --name "jwt-issuer-$ENV" --query value -o tsv)
+                audience=$(az keyvault secret show --vault-name "$KV_NAME" --name "jwt-audience-$ENV" --query value -o tsv)
+                base_url=$(az keyvault secret show --vault-name "$KV_NAME" --name "app-base-url-$ENV" --query value -o tsv)
+                
+                echo "Configuring App Service settings..."
+                az webapp config appsettings set \
+                  --resource-group "$RG" \
+                  --name "$WEBAPP" \
+                  --settings \
+                    "ConnectionString=@Microsoft.KeyVault(SecretUri=$conn_uri)" \
+                    "Jwt__Key=@Microsoft.KeyVault(SecretUri=$jwt_uri)" \
+                    "Jwt__Issuer=$issuer" \
+                    "Jwt__Audience=$audience" \
+                    "BaseUrl=$base_url" \
+                    "DOCKER_REGISTRY_SERVER_URL=https://$ACR_LOGIN_SERVER" \
+                    "DOCKER_ENABLE_CI=true" \
+                    "WEBSITES_PORT=8080"
+                
+                echo "Configuring ACR authentication with managed identity..."
+                az webapp config set \
+                  --resource-group "$RG" \
+                  --name "$WEBAPP" \
+                  --generic-configurations '{"acrUseManagedIdentityCreds": true}'
+                
+                echo "App Service configuration complete!"
+
+  # ========================================================================
+  # Azure DevOps automation stage (DISABLED - No PAT available)
+  # ========================================================================
+  # This stage is disabled because PAT tokens are not permitted.
+  # Service connections and variable groups must be created manually.
+  # See instructions below for manual setup.
+  # ========================================================================
+
+

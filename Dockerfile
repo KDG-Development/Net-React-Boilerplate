@@ -2,7 +2,7 @@
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
-EXPOSE 5261
+EXPOSE 8080
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG ENVIRONMENT=Production
@@ -40,7 +40,7 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 COPY --from=publish /src/appsettings*.json .
 COPY --from=publish /src/Migrations/scripts ./scripts
-ENV ASPNETCORE_URLS=http://+:5261
+ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENTRYPOINT ["dotnet", "KDG.Boilerplate.Server.dll"]
 
@@ -76,7 +76,7 @@ ENV CORECLR_PROFILER_PATH_32="/opt/apminsight/dotnet/ApmInsightDotNetCoreAgent/x
 ENV DOTNET_STARTUP_HOOKS="/opt/apminsight/dotnet/ApmInsightDotNetCoreAgent/netstandard2.0/DotNetAgent.Loader.dll"
 ENV MANAGEENGINE_COMMUNICATION_MODE="direct"
 
-ENV ASPNETCORE_URLS=http://+:5261
+ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
 
 # Ensure agent always reads license from environment by removing any stale conf on start

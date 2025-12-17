@@ -1,18 +1,27 @@
 trigger:
-  - [YOUR-TRIGGER-BRANCH]
+  branches:
+    include: [ main, qa, prod ]
+
+parameters:
+  - name: environment
+    type: string
+    default: qa
+    values: [ qa, prod ]
+    displayName: Target Environment
 
 variables:
-
-  dockerRegistryServiceConnection: '[YOUR-DOCKER-REGISTRY-SERVICE-CONNECTION]' # the name of the service connection in azure devops
-  azureResourceServiceConnection: '[YOUR-AZURE-RESOURCE-SERVICE-CONNECTION]' # the name of the service connection in azure devops
-  resourceGroupName: '[YOUR-RESOURCE-GROUP-NAME]' # the name of the resource group in azure
-  webAppName: '[YOUR-WEBAPP-NAME]' # the name of the Azure Web App for Containers
-  postgresServerName: '[YOUR-POSTGRES-SERVER-NAME]' # the name of the postgres server in azure
-  imageRepository: '[YOUR-IMAGE-REPOSITORY]' # the name of the image repository in azure
-  environment: '[YOUR-ENVIRONMENT]' # the environment to deploy to, used to parse the appsettings.${environment}.json file
-
-  tag: 'latest'
-  vmImageName: 'ubuntu-latest'
+  # Link to manually created variable group
+  # You must create this variable group in Azure DevOps Library
+  - ${{ if eq(parameters.environment, 'qa') }}:
+    - group: qa-deployment-vars
+  - ${{ if eq(parameters.environment, 'prod') }}:
+    - group: prod-deployment-vars
+  
+  # Pipeline-specific variables
+  - name: tag
+    value: 'latest'
+  - name: vmImageName
+    value: 'ubuntu-latest'
 
 stages:
 - stage: Build
@@ -23,10 +32,10 @@ stages:
     steps:
     # Download environment-specific settings files
     - task: DownloadSecureFile@1
-      displayName: 'Download appsettings'
+      displayName: 'Download appsettings for ${{ parameters.environment }}'
       name: appSettings
       inputs:
-        secureFile: 'appsettings.$(environment).json'
+        secureFile: 'appsettings.${{ parameters.environment }}.json'
 
 
     # Copy config files to build context
@@ -35,7 +44,7 @@ stages:
       inputs:
         sourceFolder: '$(Agent.TempDirectory)'
         contents: |
-          appsettings.$(environment).json
+          appsettings.${{ parameters.environment }}.json
         targetFolder: '$(Build.SourcesDirectory)'
         overWrite: true
 
@@ -45,7 +54,7 @@ stages:
       inputs:
         targetType: 'inline'
         script: |
-          mv $(Build.SourcesDirectory)/appsettings.$(environment).json $(Build.SourcesDirectory)/appsettings.json
+          mv $(Build.SourcesDirectory)/appsettings.${{ parameters.environment }}.json $(Build.SourcesDirectory)/appsettings.json
 
     # Build the image with the production target stage
     - task: Docker@2
@@ -119,7 +128,7 @@ stages:
     # Push the built image to the registry
     - task: Docker@2
       displayName: 'Push Docker Image to Registry'
-      condition: succeeded()
+      #condition: succeeded()
       inputs:
         command: push
         repository: $(imageRepository)
@@ -130,11 +139,11 @@ stages:
 
     # Download environment-specific .env from Secure Files
     - task: DownloadSecureFile@1
-      displayName: 'Download .env for $(environment)'
+      displayName: 'Download .env for ${{ parameters.environment }}'
       name: envFile
       condition: succeeded()
       inputs:
-        secureFile: '.env.$(environment)'
+        secureFile: '.env.${{ parameters.environment }}'
 
     # Copy .env.<environment> to build context
     - task: CopyFiles@2
@@ -143,7 +152,7 @@ stages:
       inputs:
         sourceFolder: '$(Agent.TempDirectory)'
         contents: |
-          .env.$(environment)
+          .env.${{ parameters.environment }}
         targetFolder: '$(Build.SourcesDirectory)'
         overWrite: true
 
@@ -154,7 +163,7 @@ stages:
       inputs:
         targetType: 'inline'
         script: |
-          mv $(Build.SourcesDirectory)/.env.$(environment) $(Build.SourcesDirectory)/.env
+          mv $(Build.SourcesDirectory)/.env.${{ parameters.environment }} $(Build.SourcesDirectory)/.env
 
     # Apply .env as App Settings to Azure Web App
     - task: AzureCLI@2
