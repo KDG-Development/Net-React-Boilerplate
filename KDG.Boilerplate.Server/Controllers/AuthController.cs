@@ -34,7 +34,7 @@ public class AuthController : ControllerBase
 
         var token = _authService.GenerateToken(user);
         AuthHandler.Login(this.HttpContext,token);
-        return Ok(new { token });
+        return Ok(token);
     }
     [HttpGet]
     [Authorize]
