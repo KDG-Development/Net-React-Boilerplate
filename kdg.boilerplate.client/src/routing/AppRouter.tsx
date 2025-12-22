@@ -1,13 +1,17 @@
-import { ActionButton, Col, composeAppRoutingProvider, Conditional, Loader, RouteType, Row } from 'kdg-react'
+import { composeAppRoutingProvider, Conditional, Loader, RouteType } from 'kdg-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useAuthContext } from '../context/AuthContext'
 import Storage from '../common/storage'
 import { Login } from '../views/login/Login'
+import { Home } from '../views/Home/Home'
 
 export enum ROUTE_PATH {
   NOT_FOUND='*',
-  Home='/',
   LOGIN='/login',
+  Home='/',
+  Products='/products',
+  Favorites='/favorites',
+  MyAccount='/my-account',
 
   // add additional enums as needed
 }
@@ -16,7 +20,7 @@ export const AppRouter = () => {
 
   const [loading,setLoading] = useState(true)
 
-  const {user,login,logout} = useAuthContext()
+  const {user,login} = useAuthContext()
 
   const defaultGateRender = <Login/>
 
@@ -74,16 +78,7 @@ export const AppRouter = () => {
                   render:defaultGateRender,
                 }
               },
-              render:(
-                <Row>
-                  <Col>
-                    <h2>Welcome</h2>
-                    <ActionButton onClick={() => logout()}>
-                      Logout
-                    </ActionButton>
-                  </Col>
-                </Row>
-              ),
+              render:<Home/>,
             },
           ],
         })
