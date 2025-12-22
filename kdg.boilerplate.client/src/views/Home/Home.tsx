@@ -4,7 +4,7 @@ import { BaseTemplate } from "../_common/templates/BaseTemplate";
 export const Home = () => (
   <BaseTemplate>
     <Row>
-      <Col md={12}>home</Col>
+      <Col md={12}>Home</Col>
     </Row>
   </BaseTemplate>
-)
+);

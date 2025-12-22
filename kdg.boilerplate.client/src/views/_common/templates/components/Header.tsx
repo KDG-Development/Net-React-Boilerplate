@@ -1,6 +1,7 @@
 import { Icon, Image, Nav, Row, TextInput } from "kdg-react";
 import logo from "../../../../assets/images/logo.png";
 import { ProductsMegaMenu } from "./ProductsMegaMenu";
+import { CartWidget } from "./CartWidget";
 
 export const Header = () => {
   return (
@@ -58,12 +59,7 @@ export const Header = () => {
                 }}
               />
             </div>
-            <Icon
-              icon={(x) => x.cilCart}
-              className="ms-3"
-              size="xl"
-              onClick={() => {}}
-            />
+            <CartWidget />
           </div>
         </Row>
       </div>

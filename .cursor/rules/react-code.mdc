@@ -7,3 +7,4 @@ globs: *.tsx
 - always use functional components
 - prefer boostrap/coreui css classnames
 - dont use inline styles
+- sensible type definition locations - domain goes in `src/types` folder, encapsulated template types can be in file, such as props
