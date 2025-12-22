@@ -1,0 +1,9 @@
+---
+description: Standards for writing react code
+globs: *.tsx
+---
+- dont use React.FC
+- dont destructure props, prefer `props.property`
+- always use functional components
+- prefer boostrap/coreui css classnames
+- dont use inline styles
