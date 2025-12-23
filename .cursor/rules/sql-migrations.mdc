@@ -1,0 +1,10 @@
+---
+description: Standards for writing SQL migrations
+globs: Migrations/scripts/*.sql
+---
+- name should match [YYYYMMDDHHSS]-[migrationname].sql, use a CLI date command to determine this
+- use preemptive drop statements at the top for re-runnable development
+- drop in dependency order: triggers, functions, child tables, parent tables
+- use "drop ... if exists" to prevent errors on first run
+- use "create" without "if not exists" when drops are present
+- keep "create or replace" for functions as a safety net
