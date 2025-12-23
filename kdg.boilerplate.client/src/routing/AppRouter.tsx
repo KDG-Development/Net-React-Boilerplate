@@ -4,18 +4,22 @@ import { useAuthContext } from '../context/AuthContext'
 import Storage from '../common/storage'
 import { Login } from '../views/login/Login'
 import { Home } from '../views/Home/Home'
+import { CategoryPage } from '../views/category/CategoryPage'
 import { tryParseJWT, isTokenExpired } from '../util/jwt'
 
-export enum ROUTE_PATH {
-  NOT_FOUND='*',
-  LOGIN='/login',
-  Home='/',
-  Products='/products',
-  Favorites='/favorites',
-  MyAccount='/my-account',
+export const ROUTE_BASE = {
+  Categories: '/categories',
+} as const;
 
-  // add additional enums as needed
-}
+export const ROUTE_PATH = {
+  NOT_FOUND: '*',
+  LOGIN: '/login',
+  Home: '/',
+  Categories: `${ROUTE_BASE.Categories}/*`,
+  Products: '/products',
+  Favorites: '/favorites',
+  MyAccount: '/my-account',
+} as const;
 
 export const AppRouter = () => {
 
@@ -75,6 +79,17 @@ export const AppRouter = () => {
                 }
               },
               render:<Home/>,
+            },
+            {
+              kind:RouteType.PRIVATE,
+              paths:[ROUTE_PATH.Categories],
+              gate:{
+                allow:!!user,
+                onNotAllow:{
+                  render:defaultGateRender,
+                }
+              },
+              render:<CategoryPage/>,
             },
           ],
         })

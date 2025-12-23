@@ -5,6 +5,7 @@ namespace KDG.Boilerplate.Services;
 public interface ICategoryService
 {
     Task<Dictionary<string, CategoryNode>> GetCategoriesAsync();
+    Task<CategoryDetailResponse?> GetCategoryByPathAsync(string path);
 }
 
 public class CategoryService : ICategoryService
@@ -20,6 +21,34 @@ public class CategoryService : ICategoryService
     {
         var categories = await _categoryRepository.GetAllAsync();
         return BuildCategoryTree(categories);
+    }
+
+    public async Task<CategoryDetailResponse?> GetCategoryByPathAsync(string path)
+    {
+        var category = await _categoryRepository.GetByPathAsync(path);
+        if (category == null) return null;
+
+        var ancestors = await _categoryRepository.GetAncestorsAsync(category.Id);
+        var children = await _categoryRepository.GetChildrenAsync(category.Id);
+
+        return new CategoryDetailResponse
+        {
+            Id = category.Id,
+            Name = category.Name,
+            FullPath = category.FullPath,
+            Breadcrumbs = ancestors.Select(a => new CategoryBreadcrumb
+            {
+                Id = a.Id,
+                Name = a.Name,
+                FullPath = a.FullPath
+            }).ToList(),
+            Subcategories = children.Select(c => new SubcategoryInfo
+            {
+                Id = c.Id,
+                Name = c.Name,
+                FullPath = c.FullPath
+            }).ToList()
+        };
     }
 
     private static Dictionary<string, CategoryNode> BuildCategoryTree(List<Category> categories)
@@ -42,7 +71,11 @@ public class CategoryService : ICategoryService
 
     private static CategoryNode BuildNode(Category category, Dictionary<Guid, List<Category>> childrenByParent)
     {
-        var node = new CategoryNode { Label = category.Name };
+        var node = new CategoryNode 
+        { 
+            Label = category.Name,
+            FullPath = category.FullPath
+        };
 
         if (childrenByParent.TryGetValue(category.Id, out var children) && children.Count > 0)
         {
