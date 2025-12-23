@@ -4,6 +4,7 @@ import { useAuthContext } from '../context/AuthContext'
 import Storage from '../common/storage'
 import { Login } from '../views/login/Login'
 import { Home } from '../views/Home/Home'
+import { tryParseJWT, isTokenExpired } from '../util/jwt'
 
 export enum ROUTE_PATH {
   NOT_FOUND='*',
@@ -28,20 +29,15 @@ export const AppRouter = () => {
     try {
       const token = Storage.getAuthToken()
       if (token) {
-        // add your custom jwt parsing functionality
-        login({
-            id:'example-id',
-            jwt:'example-jwt',
-            user:{
-              id:'example-id',
-              email:'example@example.com',
-              permissionGroups:['example-permission-group'],
-              permissions:['example-permission'],
-            }
-        })
+        if (isTokenExpired(token)) {
+          Storage.clearAuthToken()
+        } else {
+          login(tryParseJWT(token))
+        }
       }
     } catch (e) {
       console.error('unable to load token from storage', e)
+      Storage.clearAuthToken()
     } finally {
       setLoading(false)
     }
