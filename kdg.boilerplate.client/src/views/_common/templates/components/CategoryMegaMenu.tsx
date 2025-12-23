@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { getCategories } from "../../../../api/categories";
-import { MegaMenu, MegaMenuCategories } from "./MegaMenu";
+import { MegaMenu, CategoryTree } from "./MegaMenu";
 
-type ProductsMegaMenuProps = {
+type CategoryMegaMenuProps = {
   onCategorySelect?: (path: string[]) => void;
 };
 
-export const ProductsMegaMenu = (props: ProductsMegaMenuProps) => {
-  const [categories, setCategories] = useState<MegaMenuCategories | null>(null);
+export const CategoryMegaMenu = (props: CategoryMegaMenuProps) => {
+  const [categories, setCategories] = useState<CategoryTree | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,3 +28,4 @@ export const ProductsMegaMenu = (props: ProductsMegaMenuProps) => {
     />
   );
 };
+

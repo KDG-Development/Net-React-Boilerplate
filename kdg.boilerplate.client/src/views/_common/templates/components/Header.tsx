@@ -1,6 +1,6 @@
 import { Icon, Image, Nav, Row, TextInput } from "kdg-react";
 import logo from "../../../../assets/images/logo.png";
-import { ProductsMegaMenu } from "./ProductsMegaMenu";
+import { CategoryMegaMenu } from "./CategoryMegaMenu";
 import { CartWidget } from "./CartWidget";
 
 export const Header = () => {
@@ -25,7 +25,7 @@ export const Header = () => {
               items={[
                 {
                   key: "Products",
-                  label: <ProductsMegaMenu />,
+                  label: <CategoryMegaMenu />,
                   onClick: () => {
                     // nothing, handled by mega menu
                   },

@@ -2,6 +2,9 @@
 description: Standards for writing react code
 globs: *.tsx
 ---
+- avoid using `any`
+- avoid type casting - always map
+- unknown/any is allowed at the application API boundary
 - dont use React.FC
 - dont destructure props, prefer `props.property`
 - always use functional components

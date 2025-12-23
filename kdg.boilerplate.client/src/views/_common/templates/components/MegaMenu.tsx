@@ -2,25 +2,25 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Clickable, Icon, Loader } from "kdg-react";
 
 // Recursive category type with dictionary children for O(1) lookups
-type MegaMenuCategory = {
+export type CategoryNode = {
   label: string;
-  children?: MegaMenuCategories;
+  children?: CategoryTree;
 };
 
-export type MegaMenuCategories = Record<string, MegaMenuCategory>;
+export type CategoryTree = Record<string, CategoryNode>;
 
 type MegaMenuProps = {
   trigger: React.ReactNode;
-  categories: MegaMenuCategories | null;
+  categories: CategoryTree | null;
   loading?: boolean;
   onSelect?: (path: string[]) => void;
 };
 
 type MegaMenuPanelProps = {
-  items: MegaMenuCategories;
+  items: CategoryTree;
   selectedId: string | null;
   onHover: (id: string) => void;
-  onClick: (id: string, item: MegaMenuCategory) => void;
+  onClick: (id: string, item: CategoryNode) => void;
   isLast: boolean;
 };
 
@@ -117,7 +117,7 @@ export const MegaMenu = (props: MegaMenuProps) => {
   );
 
   const handleClick = useCallback(
-    (depth: number, id: string, item: MegaMenuCategory) => {
+    (depth: number, id: string, item: CategoryNode) => {
       const hasChildren = item.children && Object.keys(item.children).length > 0;
       if (hasChildren) {
         setSelectedPath([...selectedPath.slice(0, depth), id]);
@@ -142,7 +142,7 @@ export const MegaMenu = (props: MegaMenuProps) => {
           return acc;
         },
         {
-          panels: [{ items: props.categories, selectedId: selectedPath[0] ?? null }] as { items: MegaMenuCategories; selectedId: string | null }[],
+          panels: [{ items: props.categories, selectedId: selectedPath[0] ?? null }] as { items: CategoryTree; selectedId: string | null }[],
           current: props.categories,
         }
       ).panels

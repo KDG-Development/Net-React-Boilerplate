@@ -30,6 +30,8 @@ var connectionString = builder.Configuration["ConnectionString"] ?? throw new Ex
 builder.Services.AddScoped<IDatabase<Npgsql.NpgsqlConnection, Npgsql.NpgsqlTransaction>>(provider => 
   new KDG.Database.PostgreSQL(connectionString));
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IAuthService>(provider => new AuthService(
     builder.Configuration["Jwt:Key"] ?? throw new Exception("JWT Key not configured"),
     builder.Configuration["Jwt:Issuer"] ?? throw new Exception("JWT Issuer not configured"), 
