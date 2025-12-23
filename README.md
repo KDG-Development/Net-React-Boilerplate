@@ -25,6 +25,24 @@ docker compose --profile app up --build
 
 > After startup (profile: app): Frontend https://localhost:5173, API https://localhost:5261
 
+# Data Seeding
+
+Seed the development database with test data for categories and products:
+
+```bash
+# Seed with default counts (10 categories, 50 products)
+docker compose run --rm devtools
+
+# Seed with custom counts
+docker compose run --rm devtools seed --categories 20 --products 100
+
+# Seed only categories or products
+docker compose run --rm devtools seed --categories
+docker compose run --rm devtools seed --products 25
+```
+
+> **Note**: This tool only runs in Development environment. It will refuse to execute in QA/Production.
+
 # Running Tests
 
 ## Unit Tests

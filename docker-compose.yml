@@ -139,5 +139,28 @@ services:
     entrypoint: ["dotnet"]
     command: ["test", "KDG.IntegrationTests/KDG.IntegrationTests.csproj", "--verbosity", "normal"]
 
+  devtools:
+    profiles: ["devtools"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: build
+      args:
+        - BUILD_CONFIGURATION=Development
+    volumes:
+      - ./KDG.DevTools:/src/KDG.DevTools
+      - ./appsettings.Development.json:/src/appsettings.json:ro
+      # Prevent sync of build artifacts
+      - /src/KDG.DevTools/bin/
+      - /src/KDG.DevTools/obj/
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    working_dir: /src
+    entrypoint: ["dotnet", "run", "--project", "KDG.DevTools/KDG.DevTools.csproj", "--"]
+    command: ["seed", "--all"]
+    depends_on:
+      db:
+        condition: service_started
+
 volumes:
   postgres_data_kdg-boilerplate:

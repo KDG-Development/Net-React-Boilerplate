@@ -17,10 +17,12 @@ RUN apt-get update && \
 WORKDIR /src
 COPY ["KDG.Boilerplate.Server/*.csproj", "KDG.Boilerplate.Server/"]
 COPY ["Migrations/*.csproj", "Migrations/"]
+COPY ["KDG.DevTools/*.csproj", "KDG.DevTools/"]
 COPY ["kdg.boilerplate.client/*.esproj", "kdg.boilerplate.client/"]
 COPY ["appsettings*.json", "./"]
 
 RUN dotnet restore "./KDG.Boilerplate.Server/KDG.Boilerplate.Server.csproj"
+RUN dotnet restore "./KDG.DevTools/KDG.DevTools.csproj"
 COPY . .
 
 WORKDIR "/src/kdg.boilerplate.client"
