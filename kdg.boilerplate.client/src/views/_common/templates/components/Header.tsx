@@ -1,19 +1,35 @@
-import { Icon, Image, Nav, Row, TextInput } from "kdg-react";
+import { Clickable, Icon, Image, Nav, Row, TextInput, useAppNavigation } from "kdg-react";
 import { Link } from "react-router-dom";
 import logo from "../../../../assets/images/logo.png";
 import { CategoryMegaMenu } from "./CategoryMegaMenu";
 import { CartWidget } from "./CartWidget";
 import { ROUTE_PATH } from "../../../../routing/AppRouter";
+import { useAuthContext } from "../../../../context/AuthContext";
 
 export const Header = () => {
+  const user = useAuthContext();
+  const navigate = useAppNavigation();
   return (
     <>
       {/* top header */}
-      <div className="bg-light">
+      <div className="bg-light small">
         <div className="px-5 py-1">
           <div className="d-flex align-items-center justify-content-between small">
-            <span>111-111-1111 | contact@email.com</span>
-            <span>Hello, Guest! [login]</span>
+            <div><a href='tel:111-111-1111'>111-111-1111</a> | <a href='mailto:contact@email.com'>contact@email.com</a></div>
+            <Clickable onClick={() => {
+              if (user.user) {
+                user.logout();
+              } else {
+                navigate(ROUTE_PATH.LOGIN);
+              }
+            }}>
+              <div>
+                Hello, {user.user ? user.user.user.email : 'Guest'}!
+                <span className="text-info ms-1">
+                  ({user.user ? 'Logout?' : 'Login?'})
+                </span>
+              </div>
+            </Clickable>
           </div>
         </div>
       </div>
