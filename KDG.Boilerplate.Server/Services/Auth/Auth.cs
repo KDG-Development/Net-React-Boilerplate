@@ -50,7 +50,7 @@ public class AuthService : IAuthService
             issuer: _issuer,
             audience: _audience,
             claims: claims,
-            expires: DateTime.Now.AddHours(1),
+            expires: TokenExpiration(),
             signingCredentials: credentials
         );
 
