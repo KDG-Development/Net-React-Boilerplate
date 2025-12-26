@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { Col, Row } from "kdg-react";
+import { Col, Row, Clickable, Icon } from "kdg-react";
 import { BaseTemplate } from "../_common/templates/BaseTemplate";
+import { Drawer } from "../../components/Drawer";
 import { getCategoryByPath, getCategories } from "../../api/categories";
 import { getProducts } from "../../api/products";
 import { CategoryTree } from "../_common/templates/components/MegaMenu";
@@ -27,6 +28,7 @@ export const CategoryPage = () => {
   const [loading, setLoading] = useState(true);
   const [productsLoading, setProductsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   const { pagination, setPage } = usePagination();
   const { filters, search, selectedPriceRange, setPriceRange, setSearch } = useProductFilters();
@@ -165,9 +167,37 @@ export const CategoryPage = () => {
           {/* Subcategory Navigation */}
           <SubcategoryNav subcategories={subcategories} />
 
+          {/* Mobile filter button */}
+          <div className="d-lg-none mb-3">
+            <Clickable onClick={() => setFilterDrawerOpen(true)} className="btn btn-outline-secondary">
+              <Icon icon={(x) => x.cilFilter} className="me-2" />
+              Filters
+            </Clickable>
+          </div>
+
+          {/* Mobile filter drawer */}
+          <div className="d-lg-none">
+            <Drawer
+              isOpen={filterDrawerOpen}
+              onClose={() => setFilterDrawerOpen(false)}
+              header={() => <span className="fw-bold">Filters</span>}
+              position="start"
+            >
+              <FilterSidebar
+                selectedPriceRange={selectedPriceRange}
+                onPriceRangeChange={setPriceRange}
+                search={search}
+                onSearchChange={(term) => {
+                  setSearch(term);
+                  setFilterDrawerOpen(false);
+                }}
+              />
+            </Drawer>
+          </div>
+
           <Row>
-            {/* Filter Sidebar */}
-            <Col md={3}>
+            {/* Filter Sidebar - Desktop only */}
+            <Col md={3} className="d-none d-lg-block">
               <FilterSidebar
                 selectedPriceRange={selectedPriceRange}
                 onPriceRangeChange={setPriceRange}

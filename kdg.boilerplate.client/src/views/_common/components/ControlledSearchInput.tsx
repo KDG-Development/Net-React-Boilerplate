@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { TextInput, ActionButton } from "kdg-react";
+import { TextInput, ActionButton, Icon, Enums } from "kdg-react";
 
 type ControlledSearchInputProps = {
   value: string | null;
@@ -15,14 +15,6 @@ export const ControlledSearchInput = (props: ControlledSearchInputProps) => {
     props.onSearch(trimmed);
   };
 
-  const handleChange = (value: string | null) => {
-    setLocalValue(value);
-    // Trigger search on clear (native clear button or empty value)
-    if (!value) {
-      handleSearch(null);
-    }
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       handleSearch(localValue);
@@ -35,14 +27,18 @@ export const ControlledSearchInput = (props: ControlledSearchInputProps) => {
         <TextInput
           placeholder={props.placeholder ?? "Search..."}
           value={localValue}
-          onChange={handleChange}
+          onChange={setLocalValue}
           type="search"
         />
         <ActionButton
           onClick={() => handleSearch(localValue)}
           variant="outline"
+          color={Enums.Color.Secondary}
         >
-          Search
+          <Icon
+            icon={(x) => x.cilSearch}
+            size="sm"
+          />
         </ActionButton>
       </div>
     </div>

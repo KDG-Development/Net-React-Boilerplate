@@ -15,12 +15,13 @@ export const SubcategoryNav = (props: SubcategoryNavProps) => {
   return (
     <div className="mb-4 border-bottom border-bottom-light pb-4">
       <h6 className="text-muted mb-3">Browse Subcategories</h6>
-      <div className="d-flex flex-wrap gap-2">
+      <div className="d-flex flex-nowrap gap-2 overflow-auto pb-2 subcategory-scroll">
         {props.subcategories.map(sub => (
           <ActionButton
             key={sub.id}
             color={Enums.Color.Primary}
             variant="ghost"
+            className="flex-shrink-0"
             onClick={() => navigate(`${ROUTE_PATH.Products}?category=${sub.slug}`)}
           >
             {sub.name}

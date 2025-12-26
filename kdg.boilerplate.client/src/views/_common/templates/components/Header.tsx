@@ -30,8 +30,9 @@ export const Header = () => {
 
   return (
     <>
-      {/* top header - hidden on mobile */}
-      <div className="bg-light small d-none d-lg-block">
+      <div className="position-sticky top-0 bg-white" style={{ zIndex: 1030 }}>
+        {/* top header - hidden on mobile */}
+        <div className="bg-light small d-none d-lg-block">
         <div className="px-5 py-1">
           <div className="d-flex align-items-center justify-content-between small">
             <div><a href='tel:111-111-1111'>111-111-1111</a> | <a href='mailto:contact@email.com'>contact@email.com</a></div>
@@ -114,6 +115,7 @@ export const Header = () => {
             onSearch={handleHeaderSearch}
           />
         </Row>
+      </div>
       </div>
 
       {/* Mobile navigation drawer - CSS hides on desktop to handle resize edge case */}

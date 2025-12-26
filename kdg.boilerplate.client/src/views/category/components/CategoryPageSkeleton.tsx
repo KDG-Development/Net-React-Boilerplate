@@ -33,9 +33,14 @@ export const CategoryPageSkeleton = () => {
           </div>
         </div>
 
+        {/* Mobile filter button skeleton */}
+        <div className="d-lg-none mb-3">
+          <Skeleton.Button width={100} />
+        </div>
+
         <Row>
-          {/* Filter Sidebar skeleton */}
-          <Col md={3}>
+          {/* Filter Sidebar skeleton - Desktop only */}
+          <Col md={3} className="d-none d-lg-block">
             <FilterSidebarSkeleton />
           </Col>
 
