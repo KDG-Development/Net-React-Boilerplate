@@ -1,8 +1,11 @@
 import { Skeleton } from "../../../components/Skeleton";
+import { useHeaderHeight } from "../../../hooks/useHeaderHeight";
 
 export const FilterSidebarSkeleton = () => {
+  const headerHeight = useHeaderHeight();
+
   return (
-    <div className="filter-sidebar">
+    <div className="filter-sidebar position-sticky pt-4" style={{ top: headerHeight }}>
       <div className="mb-4">
         <Skeleton.Text width={60} className="mb-3" />
         <div className="d-flex flex-column gap-2">

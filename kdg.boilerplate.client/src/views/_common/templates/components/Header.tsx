@@ -30,7 +30,7 @@ export const Header = () => {
 
   return (
     <>
-      <div className="position-sticky top-0 bg-white" style={{ zIndex: 1030 }}>
+      <div id="site-header" className="position-sticky top-0 bg-white" style={{ zIndex: 1030 }}>
         {/* top header - hidden on mobile */}
         <div className="bg-light small d-none d-lg-block">
         <div className="px-5 py-1">

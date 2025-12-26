@@ -1,6 +1,7 @@
 import { Clickable, Radio } from "kdg-react";
 import { PriceRange, PRICE_RANGES } from "../../../types/product/product";
 import { ControlledSearchInput } from "../../_common/components/ControlledSearchInput";
+import { useHeaderHeight } from "../../../hooks/useHeaderHeight";
 
 type FilterSidebarProps = {
   selectedPriceRange: PriceRange;
@@ -10,10 +11,11 @@ type FilterSidebarProps = {
 };
 
 export const FilterSidebar = (props: FilterSidebarProps) => {
+  const headerHeight = useHeaderHeight();
+
   return (
-    <div className="filter-sidebar">
+    <div className="filter-sidebar position-sticky pt-4" style={{ top: headerHeight, maxHeight: `calc(100vh - ${headerHeight}px)`, overflowY: 'auto' }}>
       <div className="mb-4">
-        <h6 className="fw-bold mb-3">Search</h6>
         <ControlledSearchInput
           value={props.search}
           onSearch={props.onSearchChange}
