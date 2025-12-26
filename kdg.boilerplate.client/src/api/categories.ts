@@ -2,7 +2,7 @@ import { RequestMethodArgs } from "kdg-react"
 import { CategoryTree, CategoryNode } from "../views/_common/templates/components/MegaMenu"
 import { Api } from "./_common"
 import { PaginatedResponse, PaginationParams } from "../types/common/pagination"
-import { TProduct } from "../types/product/product"
+import { TProduct, ProductFilterParams } from "../types/product/product"
 import { CategoryDetail } from "../types/category/category"
 
 export const getCategories = async (args: RequestMethodArgs<CategoryTree>) => {
@@ -59,15 +59,17 @@ export const getCategoryProducts = async (
   args: RequestMethodArgs<PaginatedResponse<TProduct>> & { 
     categoryId: string; 
     pagination: PaginationParams;
+    filters?: ProductFilterParams;
   }
 ) => {
-  const queryParams = new URLSearchParams({
-    page: String(args.pagination.page),
-    pageSize: String(args.pagination.pageSize),
-  });
-
   await Api.Request.Get({
-    url: `${Api.BASE_URL}/categories/${args.categoryId}/products?${queryParams}`,
+    url: `${Api.BASE_URL}/categories/${args.categoryId}/products`,
+    parameters: Api.composeQueryParams({
+      page: args.pagination.page,
+      pageSize: args.pagination.pageSize,
+      minPrice: args.filters?.minPrice,
+      maxPrice: args.filters?.maxPrice,
+    }),
     success: args.success,
     errorHandler: args.errorHandler,
     mapResult: (response: unknown): PaginatedResponse<TProduct> => {

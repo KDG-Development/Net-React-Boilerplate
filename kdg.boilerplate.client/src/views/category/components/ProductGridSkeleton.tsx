@@ -24,13 +24,13 @@ const ProductCardSkeleton = () => (
 );
 
 export const ProductGridSkeleton = (props: ProductGridSkeletonProps) => {
-  const count = props.count || 8;
+  const count = props.count || 6;
 
   return (
     <>
       <Row>
         {Array.from({ length: count }).map((_, idx) => (
-          <Col key={idx} xs={12} sm={6} md={4} lg={3} className="mb-4">
+          <Col key={idx} xs={12} sm={6} md={6} lg={4} className="mb-4">
             <ProductCardSkeleton />
           </Col>
         ))}

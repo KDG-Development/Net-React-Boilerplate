@@ -9,6 +9,19 @@ export namespace Api {
     recordId:string
   }
 
+  type QueryParamValue = string | number | boolean | null | undefined;
+
+  export const composeQueryParams = <T extends Record<string, QueryParamValue>>(
+    params: T
+  ): Record<string, string> => {
+    return Object.entries(params).reduce((acc, [key, value]) => {
+      if (value != null) {
+        acc[key] = String(value);
+      }
+      return acc;
+    }, {} as Record<string, string>);
+  };
+
   const defaultUnauthorizedHandler = () => {
     Storage.clearAuthToken()
     window.location.href = ROUTE_PATH.LOGIN

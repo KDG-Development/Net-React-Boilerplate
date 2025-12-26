@@ -5,7 +5,10 @@ namespace KDG.Boilerplate.Services;
 
 public interface IProductService
 {
-    Task<PaginatedResponse<Product>> GetProductsByCategoryAsync(Guid categoryId, PaginationParams pagination);
+    Task<PaginatedResponse<Product>> GetProductsByCategoryAsync(
+        Guid categoryId, 
+        PaginationParams pagination,
+        ProductFilterParams? filters = null);
 }
 
 public class ProductService : IProductService
@@ -17,12 +20,16 @@ public class ProductService : IProductService
         _productRepository = productRepository;
     }
 
-    public async Task<PaginatedResponse<Product>> GetProductsByCategoryAsync(Guid categoryId, PaginationParams pagination)
+    public async Task<PaginatedResponse<Product>> GetProductsByCategoryAsync(
+        Guid categoryId, 
+        PaginationParams pagination,
+        ProductFilterParams? filters = null)
     {
         var (products, totalCount) = await _productRepository.GetPaginatedByCategoryAsync(
             categoryId, 
             pagination.Offset, 
-            pagination.PageSize
+            pagination.PageSize,
+            filters
         );
 
         return new PaginatedResponse<Product>(products, pagination.Page, pagination.PageSize, totalCount);

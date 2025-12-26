@@ -1,6 +1,7 @@
 import { Col, Row } from "kdg-react";
 import { Skeleton } from "../../../components/Skeleton";
 import { ProductGridSkeleton } from "./ProductGridSkeleton";
+import { FilterSidebarSkeleton } from "./FilterSidebarSkeleton";
 
 export const CategoryPageSkeleton = () => {
   return (
@@ -32,8 +33,17 @@ export const CategoryPageSkeleton = () => {
           </div>
         </div>
 
-        {/* Products Grid skeleton */}
-        <ProductGridSkeleton />
+        <Row>
+          {/* Filter Sidebar skeleton */}
+          <Col md={3}>
+            <FilterSidebarSkeleton />
+          </Col>
+
+          {/* Products Grid skeleton */}
+          <Col md={9}>
+            <ProductGridSkeleton />
+          </Col>
+        </Row>
       </Col>
     </Row>
   );

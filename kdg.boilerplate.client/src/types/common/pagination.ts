@@ -6,8 +6,12 @@ export type PaginatedResponse<T> = {
   totalPages: number;
 };
 
+export const PAGINATION_PARAM_KEYS = {
+  page: 'page',
+  pageSize: 'pageSize',
+} as const;
+
 export type PaginationParams = {
-  page: number;
-  pageSize: number;
+  [K in keyof typeof PAGINATION_PARAM_KEYS]: number;
 };
 

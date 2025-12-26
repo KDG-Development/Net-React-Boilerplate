@@ -1,0 +1,2 @@
+- there are no existing patterns that we should use as a reference to implement this request
+- rely on build/compile/lint/runtime errors to determine implementation

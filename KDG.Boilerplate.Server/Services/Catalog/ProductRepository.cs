@@ -7,7 +7,11 @@ namespace KDG.Boilerplate.Services;
 
 public interface IProductRepository
 {
-    Task<(List<Product> Items, int TotalCount)> GetPaginatedByCategoryAsync(Guid categoryId, int offset, int limit);
+    Task<(List<Product> Items, int TotalCount)> GetPaginatedByCategoryAsync(
+        Guid categoryId, 
+        int offset, 
+        int limit,
+        ProductFilterParams? filters = null);
 }
 
 public class ProductRepository : IProductRepository
@@ -19,11 +23,21 @@ public class ProductRepository : IProductRepository
         _database = database;
     }
 
-    public async Task<(List<Product> Items, int TotalCount)> GetPaginatedByCategoryAsync(Guid categoryId, int offset, int limit)
+    public async Task<(List<Product> Items, int TotalCount)> GetPaginatedByCategoryAsync(
+        Guid categoryId, 
+        int offset, 
+        int limit,
+        ProductFilterParams? filters = null)
     {
         return await _database.WithConnection(async connection =>
         {
-            var sql = @"
+            var priceFilter = "";
+            if (filters?.MinPrice.HasValue == true)
+                priceFilter += " AND p.price >= @MinPrice";
+            if (filters?.MaxPrice.HasValue == true)
+                priceFilter += " AND p.price < @MaxPrice";
+
+            var sql = $@"
                 WITH RECURSIVE category_tree AS (
                     SELECT id FROM categories WHERE id = @CategoryId
                     UNION ALL
@@ -38,11 +52,17 @@ public class ProductRepository : IProductRepository
                     p.price,
                     COUNT(*) OVER() AS TotalCount
                 FROM products p
-                WHERE p.category_id IN (SELECT id FROM category_tree)
+                WHERE p.category_id IN (SELECT id FROM category_tree){priceFilter}
                 ORDER BY p.name
                 LIMIT @Limit OFFSET @Offset";
 
-            var results = (await connection.QueryAsync<ProductWithCount>(sql, new { CategoryId = categoryId, Limit = limit, Offset = offset })).ToList();
+            var results = (await connection.QueryAsync<ProductWithCount>(sql, new { 
+                CategoryId = categoryId, 
+                Limit = limit, 
+                Offset = offset,
+                MinPrice = filters?.MinPrice,
+                MaxPrice = filters?.MaxPrice
+            })).ToList();
             
             var totalCount = results.FirstOrDefault()?.TotalCount ?? 0;
             var products = results.Select(r => new Product

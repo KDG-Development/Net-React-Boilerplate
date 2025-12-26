@@ -6,8 +6,10 @@ import { getCategoryByPath, getCategoryProducts } from "../../api/categories";
 import { TProduct } from "../../types/product/product";
 import { PaginatedResponse } from "../../types/common/pagination";
 import { usePagination } from "../../hooks/usePagination";
+import { useProductFilters } from "../../hooks/useProductFilters";
 import { SubcategoryNav } from "./components/SubcategoryNav";
 import { ProductGrid } from "./components/ProductGrid";
+import { FilterSidebar } from "./components/FilterSidebar";
 import { CategoryPageSkeleton } from "./components/CategoryPageSkeleton";
 import { ROUTE_BASE } from "../../routing/AppRouter";
 import { CategoryDetail } from "../../types/category/category";
@@ -23,6 +25,7 @@ export const CategoryPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   const { pagination, setPage } = usePagination();
+  const { filters, selectedPriceRange, setPriceRange } = useProductFilters();
 
   // Load category details
   useEffect(() => {
@@ -52,7 +55,7 @@ export const CategoryPage = () => {
     });
   }, [path]);
 
-  // Load products when category or pagination changes
+  // Load products when category, pagination, or filters change
   useEffect(() => {
     if (!category) return;
 
@@ -61,6 +64,7 @@ export const CategoryPage = () => {
     getCategoryProducts({
       categoryId: category.id,
       pagination,
+      filters,
       success: (data) => {
         setProducts(data);
         setProductsLoading(false);
@@ -70,7 +74,7 @@ export const CategoryPage = () => {
         setProductsLoading(false);
       }
     });
-  }, [category, pagination.page, pagination.pageSize]);
+  }, [category, pagination.page, pagination.pageSize, filters.minPrice, filters.maxPrice]);
 
   if (loading) {
     return (
@@ -129,12 +133,24 @@ export const CategoryPage = () => {
           {/* Subcategory Navigation */}
           <SubcategoryNav subcategories={category.subcategories} />
 
-          {/* Products Grid */}
-          <ProductGrid
-            data={products}
-            loading={productsLoading}
-            onPageChange={setPage}
-          />
+          <Row>
+            {/* Filter Sidebar */}
+            <Col md={3}>
+              <FilterSidebar
+                selectedPriceRange={selectedPriceRange}
+                onPriceRangeChange={setPriceRange}
+              />
+            </Col>
+
+            {/* Products Grid */}
+            <Col md={9}>
+              <ProductGrid
+                data={products}
+                loading={productsLoading}
+                onPageChange={setPage}
+              />
+            </Col>
+          </Row>
         </Col>
       </Row>
     </BaseTemplate>

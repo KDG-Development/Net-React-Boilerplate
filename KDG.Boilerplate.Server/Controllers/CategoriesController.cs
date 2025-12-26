@@ -53,9 +53,10 @@ public class CategoriesController : ControllerBase
     [HttpGet("{id:guid}/products")]
     public async Task<IActionResult> GetCategoryProducts(
         Guid id,
-        [FromQuery] PaginationParams pagination)
+        [FromQuery] PaginationParams pagination,
+        [FromQuery] ProductFilterParams filters)
     {
-        var products = await _productService.GetProductsByCategoryAsync(id, pagination);
+        var products = await _productService.GetProductsByCategoryAsync(id, pagination, filters);
         return Ok(products);
     }
 }
