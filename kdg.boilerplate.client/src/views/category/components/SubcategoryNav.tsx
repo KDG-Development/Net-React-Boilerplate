@@ -20,7 +20,7 @@ export const SubcategoryNav = (props: SubcategoryNavProps) => {
           <ActionButton
             key={sub.id}
             color={Enums.Color.Primary}
-            variant="outline"
+            variant="ghost"
             onClick={() => navigate(`${ROUTE_PATH.Products}?category=${sub.slug}`)}
           >
             {sub.name}

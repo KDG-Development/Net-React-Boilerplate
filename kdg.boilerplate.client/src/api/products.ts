@@ -18,6 +18,7 @@ export const getProducts = async (
       pageSize: args.pagination.pageSize,
       minPrice: args.filters?.minPrice,
       maxPrice: args.filters?.maxPrice,
+      search: args.filters?.search,
     }),
     success: args.success,
     errorHandler: args.errorHandler,

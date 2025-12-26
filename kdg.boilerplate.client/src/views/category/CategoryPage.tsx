@@ -29,7 +29,7 @@ export const CategoryPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   const { pagination, setPage } = usePagination();
-  const { filters, selectedPriceRange, setPriceRange } = useProductFilters();
+  const { filters, search, selectedPriceRange, setPriceRange, setSearch } = useProductFilters();
 
   // Load category details or top-level categories for root view
   useEffect(() => {
@@ -95,7 +95,7 @@ export const CategoryPage = () => {
         setProductsLoading(false);
       }
     });
-  }, [isRootView, category, loading, pagination.page, pagination.pageSize, filters.minPrice, filters.maxPrice]);
+  }, [isRootView, category, loading, pagination.page, pagination.pageSize, filters.minPrice, filters.maxPrice, filters.search]);
 
   if (loading) {
     return (
@@ -171,6 +171,8 @@ export const CategoryPage = () => {
               <FilterSidebar
                 selectedPriceRange={selectedPriceRange}
                 onPriceRangeChange={setPriceRange}
+                search={search}
+                onSearchChange={setSearch}
               />
             </Col>
 

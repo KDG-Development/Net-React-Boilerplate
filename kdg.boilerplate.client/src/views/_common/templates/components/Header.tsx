@@ -1,14 +1,30 @@
-import { Clickable, Icon, Image, Nav, Row, TextInput, useAppNavigation } from "kdg-react";
-import { Link } from "react-router-dom";
+import { Clickable, Image, Nav, Row, useAppNavigation } from "kdg-react";
+import { Link, useLocation } from "react-router-dom";
 import logo from "../../../../assets/images/logo.png";
 import { CategoryMegaMenu } from "./CategoryMegaMenu";
 import { CartWidget } from "./CartWidget";
 import { ROUTE_PATH } from "../../../../routing/AppRouter";
 import { useAuthContext } from "../../../../context/AuthContext";
+import { getResetSearchParams } from "../../../../hooks/useProductFilters";
+import { ControlledSearchInput } from "../../components/ControlledSearchInput";
 
 export const Header = () => {
   const user = useAuthContext();
   const navigate = useAppNavigation();
+  const location = useLocation();
+
+  const handleHeaderSearch = (value: string | null) => {
+    const searchParams = getResetSearchParams(value);
+    const queryString = searchParams.toString();
+    navigate(`${ROUTE_PATH.Products}${queryString ? `?${queryString}` : ''}`);
+  };
+
+  // Only show current search value when on products page
+  const isOnProductsPage = location.pathname === ROUTE_PATH.Products;
+  const currentSearch = isOnProductsPage 
+    ? new URLSearchParams(location.search).get('search') 
+    : null;
+
   return (
     <>
       {/* top header */}
@@ -69,14 +85,10 @@ export const Header = () => {
               ]}
             />
             <div className="w-25">
-              <TextInput
-                placeholder="search"
-                
-                value={null}
-                onChange={() => {}}
-                icon={{
-                  content: <Icon icon={(x) => x.cilSearch} />,
-                }}
+              <ControlledSearchInput
+                placeholder="Search products..."
+                value={currentSearch}
+                onSearch={handleHeaderSearch}
               />
             </div>
             <CartWidget />

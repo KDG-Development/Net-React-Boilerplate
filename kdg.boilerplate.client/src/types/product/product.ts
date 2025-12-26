@@ -27,11 +27,19 @@ export type PriceRange = {
 
 export const FILTER_PARAM_KEYS = {
   priceRange: 'priceRange',
+  search: 'search',
 } as const;
 
 export type ProductFilterParams = {
   minPrice: number | null;
   maxPrice: number | null;
+  search: string | null;
+};
+
+export const DEFAULT_PRODUCT_FILTERS: ProductFilterParams = {
+  minPrice: null,
+  maxPrice: null,
+  search: null,
 };
 
 export const PRICE_RANGES: Record<PriceRangeId, PriceRange> = {

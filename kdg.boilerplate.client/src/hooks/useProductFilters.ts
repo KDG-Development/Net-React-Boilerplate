@@ -7,6 +7,15 @@ const isPriceRangeId = (value: string | null): value is PriceRangeId => {
   return value !== null && Object.values(PRICE_RANGE_ID).includes(value as PriceRangeId);
 };
 
+/** Build URLSearchParams with only search term (resets all other filters) */
+export const getResetSearchParams = (search: string | null): URLSearchParams => {
+  const params = new URLSearchParams();
+  if (search) {
+    params.set(FILTER_PARAM_KEYS.search, search);
+  }
+  return params;
+};
+
 export const useProductFilters = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -15,10 +24,15 @@ export const useProductFilters = () => {
     return isPriceRangeId(priceRangeParam) ? PRICE_RANGES[priceRangeParam] : DEFAULT_PRICE_RANGE;
   }, [searchParams]);
 
+  const search: string | null = useMemo(() => {
+    return searchParams.get(FILTER_PARAM_KEYS.search) || null;
+  }, [searchParams]);
+
   const filters: ProductFilterParams = useMemo(() => ({
     minPrice: selectedPriceRange.minPrice,
     maxPrice: selectedPriceRange.maxPrice,
-  }), [selectedPriceRange]);
+    search,
+  }), [selectedPriceRange, search]);
 
   const setPriceRange = useCallback((range: PriceRange) => {
     const newParams = new URLSearchParams(searchParams);
@@ -35,13 +49,28 @@ export const useProductFilters = () => {
     setSearchParams(newParams, { replace: true });
   }, [searchParams, setSearchParams]);
 
+  const setSearch = useCallback((term: string | null) => {
+    const newParams = new URLSearchParams(searchParams);
+    
+    // Reset to page 1 when search changes
+    newParams.delete(PAGINATION_PARAM_KEYS.page);
+
+    if (term) {
+      newParams.set(FILTER_PARAM_KEYS.search, term);
+    } else {
+      newParams.delete(FILTER_PARAM_KEYS.search);
+    }
+
+    setSearchParams(newParams, { replace: true });
+  }, [searchParams, setSearchParams]);
+
   const clearFilters = useCallback(() => {
     const newParams = new URLSearchParams(searchParams);
     newParams.delete(FILTER_PARAM_KEYS.priceRange);
+    newParams.delete(FILTER_PARAM_KEYS.search);
     newParams.delete(PAGINATION_PARAM_KEYS.page);
     setSearchParams(newParams, { replace: true });
   }, [searchParams, setSearchParams]);
 
-  return { filters, selectedPriceRange, setPriceRange, clearFilters };
+  return { filters, search, selectedPriceRange, setPriceRange, setSearch, clearFilters };
 };
-

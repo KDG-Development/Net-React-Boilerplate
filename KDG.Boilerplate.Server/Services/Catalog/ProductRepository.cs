@@ -37,6 +37,9 @@ public class ProductRepository : IProductRepository
                 conditions.Add("p.price >= @MinPrice");
             if (filters?.MaxPrice.HasValue == true)
                 conditions.Add("p.price < @MaxPrice");
+            var searchQuery = filters?.GetSearchQuery();
+            if (searchQuery != null)
+                conditions.Add("p.search_vector @@ to_tsquery('english', @SearchTerm)");
 
             string sql;
             if (categoryId.HasValue)
@@ -88,7 +91,8 @@ public class ProductRepository : IProductRepository
                 Limit = limit, 
                 Offset = offset,
                 MinPrice = filters?.MinPrice,
-                MaxPrice = filters?.MaxPrice
+                MaxPrice = filters?.MaxPrice,
+                SearchTerm = searchQuery
             })).ToList();
             
             var totalCount = results.FirstOrDefault()?.TotalCount ?? 0;
