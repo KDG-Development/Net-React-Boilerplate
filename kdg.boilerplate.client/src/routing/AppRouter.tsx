@@ -5,6 +5,7 @@ import Storage from '../common/storage'
 import { Login } from '../views/login/Login'
 import { Home } from '../views/Home/Home'
 import { CategoryPage } from '../views/category/CategoryPage'
+import { ProductDetailPage } from '../views/product/ProductDetailPage'
 import { tryParseJWT, isTokenExpired } from '../util/jwt'
 
 export const ROUTE_BASE = {
@@ -16,6 +17,7 @@ export const ROUTE_PATH = {
   LOGIN: '/login',
   Home: '/',
   Products: ROUTE_BASE.Products,
+  ProductDetail: `${ROUTE_BASE.Products}/:productId`,
   Favorites: '/favorites',
   MyAccount: '/my-account',
 } as const;
@@ -89,6 +91,17 @@ export const AppRouter = () => {
                 }
               },
               render:<CategoryPage/>,
+            },
+            {
+              kind:RouteType.PRIVATE,
+              paths:[ROUTE_PATH.ProductDetail],
+              gate:{
+                allow:!!user,
+                onNotAllow:{
+                  render:defaultGateRender,
+                }
+              },
+              render:<ProductDetailPage/>,
             },
           ],
         })

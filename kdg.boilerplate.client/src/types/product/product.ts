@@ -13,6 +13,21 @@ export type TProduct = {
   price: number;
 };
 
+export type TProductBreadcrumb = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+export type TProductDetail = {
+  id: string;
+  name: string;
+  images: TProductImage[];
+  description: string | null;
+  price: number;
+  breadcrumbs: TProductBreadcrumb[];
+};
+
 // todo: maybe come from server/settings?
 export const PRICE_RANGE_ID = {
   all: 'all',

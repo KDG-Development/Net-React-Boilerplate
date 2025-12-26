@@ -12,6 +12,7 @@ public interface IProductRepository
         int limit,
         Guid? categoryId = null,
         ProductFilterParams? filters = null);
+    Task<Product?> GetByIdAsync(Guid id);
 }
 
 public class ProductRepository : IProductRepository
@@ -126,6 +127,38 @@ public class ProductRepository : IProductRepository
             }
 
             return (products, totalCount);
+        });
+    }
+
+    public async Task<Product?> GetByIdAsync(Guid id)
+    {
+        return await _database.WithConnection(async connection =>
+        {
+            var sql = @"
+                SELECT 
+                    p.id, 
+                    p.category_id AS CategoryId, 
+                    p.name, 
+                    p.description, 
+                    p.price
+                FROM products p
+                WHERE p.id = @Id";
+
+            var product = await connection.QueryFirstOrDefaultAsync<Product>(sql, new { Id = id });
+
+            if (product != null)
+            {
+                var images = await connection.QueryAsync<ProductImage>(
+                    @"SELECT id, product_id AS ProductId, src, sort_order AS SortOrder
+                      FROM product_images
+                      WHERE product_id = @ProductId
+                      ORDER BY sort_order",
+                    new { ProductId = id }
+                );
+                product.Images = images.ToList();
+            }
+
+            return product;
         });
     }
 

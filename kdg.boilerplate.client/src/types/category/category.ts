@@ -1,4 +1,4 @@
-type CategoryBreadcrumb = {
+export type CategoryBreadcrumb = {
   id: string;
   name: string;
   slug: string;

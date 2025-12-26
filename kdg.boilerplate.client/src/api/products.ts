@@ -1,7 +1,7 @@
 import { RequestMethodArgs } from "kdg-react"
 import { Api } from "./_common"
 import { PaginatedResponse, PaginationParams } from "../types/common/pagination"
-import { TProduct, TProductImage, ProductFilterParams } from "../types/product/product"
+import { TProduct, TProductImage, TProductDetail, TProductBreadcrumb, ProductFilterParams } from "../types/product/product"
 
 export const getProducts = async (
   args: RequestMethodArgs<PaginatedResponse<TProduct>> & { 
@@ -43,5 +43,32 @@ export const getProducts = async (
       };
     }
   })
+}
+
+export const getProductById = async (
+  args: RequestMethodArgs<TProductDetail> & { productId: string }
+) => {
+  await Api.Request.Get({
+    url: `${Api.BASE_URL}/products/${args.productId}`,
+    success: args.success,
+    errorHandler: args.errorHandler,
+    mapResult: (data: any): TProductDetail => ({
+      id: data.id,
+      name: data.name,
+      images: (data.images).map((i: any): TProductImage => ({
+        id: i.id,
+        productId: i.productId,
+        src: i.src,
+        sortOrder: i.sortOrder,
+      })),
+      description: data.description,
+      price: data.price,
+      breadcrumbs: (data.breadcrumbs).map((b: any): TProductBreadcrumb => ({
+        id: b.id,
+        name: b.name,
+        slug: b.slug,
+      })),
+    }),
+  });
 }
 

@@ -1,0 +1,8 @@
+---
+globs: *.tsx,*.ts
+alwaysApply: false
+---
+- avoid intermediate variables for simple boolean conditions
+- prefer inline truthiness checks like `!!array.length` over `array.length > 0`
+- use optional chaining with double-bang for nullable arrays: `!!entity?.items.length`
+- keep boolean derivations inline in JSX conditions when they are simple one-liners
