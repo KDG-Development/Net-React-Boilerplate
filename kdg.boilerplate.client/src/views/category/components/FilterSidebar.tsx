@@ -15,7 +15,6 @@ export const FilterSidebar = (props: FilterSidebarProps) => {
       <div className="mb-4">
         <h6 className="fw-bold mb-3">Search</h6>
         <ControlledSearchInput
-          placeholder="Search in category..."
           value={props.search}
           onSearch={props.onSearchChange}
         />

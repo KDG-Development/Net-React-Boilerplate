@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Clickable, Icon, Loader } from "kdg-react";
+import { Clickable, Icon, Loader, Conditional, EntityConditional } from "kdg-react";
 
 export type CategoryNode = {
   label: string;
@@ -35,22 +35,30 @@ const MobileItem = (props: MobileItemProps) => {
         <Clickable onClick={() => props.onSelect(props.item.slug)} className="d-inline-block py-2">
           {props.item.label}
         </Clickable>
-        {hasChildren && (
-          <Clickable onClick={() => setIsExpanded(!isExpanded)} className="ms-auto">
-            <Icon
-              className='border'
-              icon={(x) => (isExpanded ? x.cilMinus : x.cilPlus)} size="sm"
-            />
-          </Clickable>
-        )}
+        <Conditional
+          condition={!!hasChildren}
+          onTrue={() => (
+            <Clickable onClick={() => setIsExpanded(!isExpanded)} className="ms-auto">
+              <Icon
+                className='border'
+                icon={(x) => (isExpanded ? x.cilMinus : x.cilPlus)} size="sm"
+              />
+            </Clickable>
+          )}
+          onFalse={() => null}
+        />
       </div>
-      {isExpanded && hasChildren && (
-        <div className="ms-3 ps-3 border-start">
-          {Object.entries(props.item.children!).map(([id, child]) => (
-            <MobileItem key={id} item={child} onSelect={props.onSelect} depth={depth + 1} />
-          ))}
-        </div>
-      )}
+      <Conditional
+        condition={isExpanded && !!hasChildren}
+        onTrue={() => (
+          <div className="ms-3 ps-3 border-start">
+            {Object.entries(props.item.children!).map(([id, child]) => (
+              <MobileItem key={id} item={child} onSelect={props.onSelect} depth={depth + 1} />
+            ))}
+          </div>
+        )}
+        onFalse={() => null}
+      />
     </div>
   );
 };
@@ -161,29 +169,47 @@ export const MegaMenu = (props: MegaMenuProps) => {
       ).panels
     : [];
 
-  const content =
-    props.loading || !props.categories ? (
-      <div className={isMobile ? "py-3" : "p-4 d-flex justify-content-center"}>
-        <Loader />
-      </div>
-    ) : isMobile ? (
-      Object.entries(props.categories).map(([id, item]) => (
-        <MobileItem key={id} item={item} onSelect={handleSelect} />
-      ))
-    ) : (
-      <div className="d-flex">
-        {panels.map((panel, depth) => (
-          <Panel
-            key={depth}
-            items={panel.items}
-            selectedId={panel.selectedId}
-            onHover={(id) => handleHover(depth, id)}
-            onClick={(item) => handleSelect(item.slug)}
-            isLast={depth === panels.length - 1}
-          />
-        ))}
-      </div>
-    );
+  const content = (
+    <Conditional
+      condition={!!(props.loading || !props.categories)}
+      onTrue={() => (
+        <div className={isMobile ? "py-3" : "p-4 d-flex justify-content-center"}>
+          <Loader />
+        </div>
+      )}
+      onFalse={() => (
+        <EntityConditional
+          entity={props.categories}
+          render={categories => (
+            <Conditional
+              condition={isMobile}
+              onTrue={() => (
+                <>
+                  {Object.entries(categories).map(([id, item]) => (
+                    <MobileItem key={id} item={item} onSelect={handleSelect} />
+                  ))}
+                </>
+              )}
+              onFalse={() => (
+                <div className="d-flex">
+                  {panels.map((panel, depth) => (
+                    <Panel
+                      key={depth}
+                      items={panel.items}
+                      selectedId={panel.selectedId}
+                      onHover={(id) => handleHover(depth, id)}
+                      onClick={(item) => handleSelect(item.slug)}
+                      isLast={depth === panels.length - 1}
+                    />
+                  ))}
+                </div>
+              )}
+            />
+          )}
+        />
+      )}
+    />
+  );
 
   return (
     <div ref={containerRef} className={isMobile ? "" : "position-relative d-inline-block"}>
@@ -204,18 +230,22 @@ export const MegaMenu = (props: MegaMenuProps) => {
         </div>
       </Clickable>
 
-      {isOpen && (
-        <div
-          className={
-            isMobile
-              ? "ps-3 border-start ms-2"
-              : "position-absolute start-0 bg-white border rounded shadow"
-          }
-          style={isMobile ? undefined : { top: "100%", zIndex: 1000, minWidth: 200 }}
-        >
-          {content}
-        </div>
-      )}
+      <Conditional
+        condition={isOpen}
+        onTrue={() => (
+          <div
+            className={
+              isMobile
+                ? "ps-3 border-start ms-2"
+                : "position-absolute start-0 bg-white border rounded shadow"
+            }
+            style={isMobile ? undefined : { top: "100%", zIndex: 1000, minWidth: 200 }}
+          >
+            {content}
+          </div>
+        )}
+        onFalse={() => null}
+      />
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { Clickable } from "kdg-react";
+import { Clickable, Conditional } from "kdg-react";
 
 type PaginationProps = {
   currentPage: number;
@@ -52,22 +52,27 @@ export const Pagination = (props: PaginationProps) => {
           </Clickable>
         </li>
 
-        {getPageNumbers().map((page, idx) => 
-          page === 'ellipsis' ? (
-            <li key={`ellipsis-${idx}`} className="page-item disabled">
-              <span className="page-link">...</span>
-            </li>
-          ) : (
-            <li key={page} className={`page-item ${props.currentPage === page ? 'active' : ''}`}>
-              <Clickable
-                className="page-link"
-                onClick={() => props.onPageChange(page)}
-              >
-                {page}
-              </Clickable>
-            </li>
-          )
-        )}
+        {getPageNumbers().map((page, idx) => (
+          <Conditional
+            key={page === 'ellipsis' ? `ellipsis-${idx}` : page}
+            condition={page === 'ellipsis'}
+            onTrue={() => (
+              <li className="page-item disabled">
+                <span className="page-link">...</span>
+              </li>
+            )}
+            onFalse={() => (
+              <li className={`page-item ${props.currentPage === page ? 'active' : ''}`}>
+                <Clickable
+                  className="page-link"
+                  onClick={() => props.onPageChange(page as number)}
+                >
+                  {page}
+                </Clickable>
+              </li>
+            )}
+          />
+        ))}
 
         <li className={`page-item ${props.currentPage === props.totalPages ? 'disabled' : ''}`}>
           <Clickable

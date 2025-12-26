@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { Col, Row, Clickable, Icon } from "kdg-react";
+import { Col, Row, Clickable, Icon, Conditional, EntityConditional } from "kdg-react";
 import { BaseTemplate } from "../_common/templates/BaseTemplate";
 import { Drawer } from "../../components/Drawer";
 import { getCategoryByPath, getCategories } from "../../api/categories";
@@ -99,124 +99,133 @@ export const CategoryPage = () => {
     });
   }, [isRootView, category, loading, pagination.page, pagination.pageSize, filters.minPrice, filters.maxPrice, filters.search]);
 
-  if (loading) {
-    return (
-      <BaseTemplate>
-        <CategoryPageSkeleton />
-      </BaseTemplate>
-    );
-  }
-
-  if (error || (!isRootView && !category)) {
-    return (
-      <BaseTemplate>
-        <Row>
-          <Col md={12}>
-            <div className="text-center py-5">
-              <h4 className="text-muted">{error || 'Category not found'}</h4>
-              <Link to="/" className="btn btn-primary mt-3">
-                Return Home
-              </Link>
-            </div>
-          </Col>
-        </Row>
-      </BaseTemplate>
-    );
-  }
-
   const pageTitle = isRootView ? 'All Products' : category?.name || '';
   const subcategories = isRootView ? topLevelCategories : (category?.subcategories || []);
 
   return (
     <BaseTemplate>
-      <Row>
-        <Col md={12}>
-          {/* Breadcrumbs */}
-          <nav aria-label="breadcrumb" className="mb-4">
-            <ol className="breadcrumb">
-              {isRootView ? (
-                <li className="breadcrumb-item active" aria-current="page">
-                  Products
-                </li>
-              ) : (
-                <>
-                  <li className="breadcrumb-item">
-                    <Link to={ROUTE_PATH.Products}>Products</Link>
-                  </li>
-                  {category?.breadcrumbs.map((crumb, idx) => (
-                    <li 
-                      key={crumb.id} 
-                      className={`breadcrumb-item ${idx === category.breadcrumbs.length - 1 ? 'active' : ''}`}
-                      aria-current={idx === category.breadcrumbs.length - 1 ? 'page' : undefined}
+      <Conditional
+        condition={loading}
+        onTrue={() => <CategoryPageSkeleton />}
+        onFalse={() => (
+          <Conditional
+            condition={!!(error || (!isRootView && !category))}
+            onTrue={() => (
+              <Row>
+                <Col md={12}>
+                  <div className="text-center py-5">
+                    <h4 className="text-muted">{error || 'Category not found'}</h4>
+                    <Link to="/" className="btn btn-primary mt-3">
+                      Return Home
+                    </Link>
+                  </div>
+                </Col>
+              </Row>
+            )}
+            onFalse={() => (
+              <Row>
+                <Col md={12}>
+                  {/* Breadcrumbs */}
+                  <nav aria-label="breadcrumb" className="mb-4">
+                    <ol className="breadcrumb">
+                      <Conditional
+                        condition={isRootView}
+                        onTrue={() => (
+                          <li className="breadcrumb-item active" aria-current="page">
+                            Products
+                          </li>
+                        )}
+                        onFalse={() => (
+                          <EntityConditional
+                            entity={category}
+                            render={cat => (
+                              <>
+                                <li className="breadcrumb-item">
+                                  <Link to={ROUTE_PATH.Products}>Products</Link>
+                                </li>
+                                {cat.breadcrumbs.map((crumb, idx) => (
+                                  <li 
+                                    key={crumb.id} 
+                                    className={`breadcrumb-item ${idx === cat.breadcrumbs.length - 1 ? 'active' : ''}`}
+                                    aria-current={idx === cat.breadcrumbs.length - 1 ? 'page' : undefined}
+                                  >
+                                    <Conditional
+                                      condition={idx === cat.breadcrumbs.length - 1}
+                                      onTrue={() => <>{crumb.name}</>}
+                                      onFalse={() => (
+                                        <Link to={`${ROUTE_PATH.Products}?category=${crumb.slug}`}>{crumb.name}</Link>
+                                      )}
+                                    />
+                                  </li>
+                                ))}
+                              </>
+                            )}
+                          />
+                        )}
+                      />
+                    </ol>
+                  </nav>
+
+                  {/* Page Title */}
+                  <h1 className="mb-4">{pageTitle}</h1>
+
+                  {/* Subcategory Navigation */}
+                  <SubcategoryNav subcategories={subcategories} />
+
+                  {/* Mobile filter button */}
+                  <div className="d-lg-none mb-3">
+                    <Clickable onClick={() => setFilterDrawerOpen(true)} className="btn btn-outline-secondary">
+                      <Icon icon={(x) => x.cilFilter} className="me-2" />
+                      Filters
+                    </Clickable>
+                  </div>
+
+                  {/* Mobile filter drawer */}
+                  <div className="d-lg-none">
+                    <Drawer
+                      isOpen={filterDrawerOpen}
+                      onClose={() => setFilterDrawerOpen(false)}
+                      header={() => <span className="fw-bold">Filters</span>}
+                      position="start"
                     >
-                      {idx === category.breadcrumbs.length - 1 ? (
-                        crumb.name
-                      ) : (
-                        <Link to={`${ROUTE_PATH.Products}?category=${crumb.slug}`}>{crumb.name}</Link>
-                      )}
-                    </li>
-                  ))}
-                </>
-              )}
-            </ol>
-          </nav>
+                      <FilterSidebar
+                        selectedPriceRange={selectedPriceRange}
+                        onPriceRangeChange={setPriceRange}
+                        search={search}
+                        onSearchChange={(term) => {
+                          setSearch(term);
+                          setFilterDrawerOpen(false);
+                        }}
+                      />
+                    </Drawer>
+                  </div>
 
-          {/* Page Title */}
-          <h1 className="mb-4">{pageTitle}</h1>
+                  <Row>
+                    {/* Filter Sidebar - Desktop only */}
+                    <Col md={3} className="d-none d-lg-block">
+                      <FilterSidebar
+                        selectedPriceRange={selectedPriceRange}
+                        onPriceRangeChange={setPriceRange}
+                        search={search}
+                        onSearchChange={setSearch}
+                      />
+                    </Col>
 
-          {/* Subcategory Navigation */}
-          <SubcategoryNav subcategories={subcategories} />
-
-          {/* Mobile filter button */}
-          <div className="d-lg-none mb-3">
-            <Clickable onClick={() => setFilterDrawerOpen(true)} className="btn btn-outline-secondary">
-              <Icon icon={(x) => x.cilFilter} className="me-2" />
-              Filters
-            </Clickable>
-          </div>
-
-          {/* Mobile filter drawer */}
-          <div className="d-lg-none">
-            <Drawer
-              isOpen={filterDrawerOpen}
-              onClose={() => setFilterDrawerOpen(false)}
-              header={() => <span className="fw-bold">Filters</span>}
-              position="start"
-            >
-              <FilterSidebar
-                selectedPriceRange={selectedPriceRange}
-                onPriceRangeChange={setPriceRange}
-                search={search}
-                onSearchChange={(term) => {
-                  setSearch(term);
-                  setFilterDrawerOpen(false);
-                }}
-              />
-            </Drawer>
-          </div>
-
-          <Row>
-            {/* Filter Sidebar - Desktop only */}
-            <Col md={3} className="d-none d-lg-block">
-              <FilterSidebar
-                selectedPriceRange={selectedPriceRange}
-                onPriceRangeChange={setPriceRange}
-                search={search}
-                onSearchChange={setSearch}
-              />
-            </Col>
-
-            {/* Products Grid */}
-            <Col md={9}>
-              <ProductGrid
-                data={products}
-                loading={productsLoading}
-                onPageChange={setPage}
-              />
-            </Col>
-          </Row>
-        </Col>
-      </Row>
+                    {/* Products Grid */}
+                    <Col md={9}>
+                      <ProductGrid
+                        data={products}
+                        loading={productsLoading}
+                        onPageChange={setPage}
+                      />
+                    </Col>
+                  </Row>
+                </Col>
+              </Row>
+            )}
+          />
+        )}
+      />
     </BaseTemplate>
   );
 };

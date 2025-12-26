@@ -99,7 +99,6 @@ export const Header = () => {
             {/* Desktop search - hidden on mobile */}
             <div className="d-none d-lg-block w-auto">
               <ControlledSearchInput
-                placeholder="Search products..."
                 value={currentSearch}
                 onSearch={handleHeaderSearch}
               />
@@ -110,7 +109,6 @@ export const Header = () => {
         {/* Mobile search row - visible only on mobile */}
         <Row className="d-lg-none mt-3">
           <ControlledSearchInput
-            placeholder="Search products..."
             value={currentSearch}
             onSearch={handleHeaderSearch}
           />

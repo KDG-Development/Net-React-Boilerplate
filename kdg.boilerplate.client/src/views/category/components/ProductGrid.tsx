@@ -1,4 +1,4 @@
-import { Card, Col, Image, Row } from "kdg-react";
+import { Card, Col, Conditional, EntityConditional, Image, Row } from "kdg-react";
 import { TProduct } from "../../../types/product/product";
 import { PaginatedResponse } from "../../../types/common/pagination";
 import { formatCurrency } from "../../../util/format";
@@ -40,36 +40,38 @@ const ProductCard = (props: { product: TProduct }) => (
 );
 
 export const ProductGrid = (props: ProductGridProps) => {
-  if (props.loading) {
-    return <ProductGridSkeleton />;
-  }
-
-  if (!props.data || props.data.items.length === 0) {
-    return (
-      <div className="text-center py-5 text-muted">
-        <p className="mb-0">No products found in this category.</p>
-      </div>
-    );
-  }
 
   return (
-    <>
-      <Row>
-        {props.data.items.map(product => (
-          <Col key={product.id} xs={12} sm={6} md={6} lg={4} className="mb-4">
-            <ProductCard product={product} />
-          </Col>
-        ))}
-      </Row>
-
-      <div className="mt-4">
-        <Pagination
-          currentPage={props.data.page}
-          totalPages={props.data.totalPages}
-          onPageChange={props.onPageChange}
+    <Conditional
+      condition={props.loading}
+      onTrue={() => (
+        <ProductGridSkeleton />
+      )}
+      onFalse={() => (
+        <EntityConditional
+          entity={props.data}
+          render={data => (
+            <>
+              <Row>
+                {data.items.map(product => (
+                  <Col key={product.id} xs={12} sm={6} md={6} lg={4} className="mb-4">
+                    <ProductCard product={product} />
+                  </Col>
+                ))}
+              </Row>
+    
+              <div className="mt-4">
+                <Pagination
+                  currentPage={data.page}
+                  totalPages={data.totalPages}
+                  onPageChange={props.onPageChange}
+                />
+              </div>
+            </>
+          )}
         />
-      </div>
-    </>
+      )}
+    />
   );
 };
 

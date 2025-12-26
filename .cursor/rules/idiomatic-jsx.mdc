@@ -1,0 +1,10 @@
+---
+description: Standards for idiomatic JSX conditional rendering
+globs: *.tsx
+---
+- prefer `Conditional` from kdg-react over ternary operators for JSX rendering
+- use `Conditional` with `onTrue`/`onFalse` render functions for boolean conditions
+- prefer `EntityConditional` over null checks when rendering depends on entity existence
+- avoid `{condition && <Component />}` patterns - use `Conditional` instead
+- avoid early return patterns for loading/error states - wrap with `Conditional`
+- nest `Conditional` components for multi-branch logic instead of chained ternaries
