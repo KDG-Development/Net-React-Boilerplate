@@ -27,14 +27,14 @@ export const MicroToast = (props: TMicroToastProps) => {
   }, []);
 
   return (
-    <div className={`micro-toast-container ${props.className ?? ""}`}>
+    <span className={`micro-toast-container ${props.className ?? ""}`}>
       {props.children(show)}
       {toasts.map((toast) => (
         <div key={toast.id} className="micro-toast">
           {toast.message}
         </div>
       ))}
-    </div>
+    </span>
   );
 };
 

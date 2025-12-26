@@ -155,62 +155,62 @@ export const ProductDetailPage = () => {
                           </p>
 
                           {/* Quantity and Add to Cart */}
-                          <MicroToast>
-                            {(toast) => (
-                              <div className="">
-                                <div className="d-flex align-items-center gap-2 my-3">
-                                  <ActionButton
-                                    variant="outline"
-                                    color={Enums.Color.Secondary}
-                                    onClick={() => setQuantity(quantity - 1)}
-                                  >
-                                    <Icon icon={(x) => x.cilMinus} />
-                                  </ActionButton>
-                                  <NumberInput
-                                    className="d-inline-block w-auto"
-                                    onChange={handleQuantityChange}
-                                    value={quantity}
-                                    min={1}
-                                    allowDecimals={false}
-                                    hideDefaultHelperText
-                                  />
-                                  <ActionButton
-                                    variant="outline"
-                                    color={Enums.Color.Secondary}
-                                    onClick={() => setQuantity(quantity + 1)}
-                                  >
-                                    <Icon icon={(x) => x.cilPlus} />
-                                  </ActionButton>
-                                </div>
-                                <Clickable
-                                  className="small text-muted d-block"
-                                  onClick={() => setQuantity(1)}
-                                >
-                                  Reset Quantity
-                                </Clickable>
+                            <div>
+                              <div className="d-flex align-items-center gap-2 my-3">
                                 <ActionButton
-                                  className="d-inline-block my-3"
-                                  onClick={() => {
-                                    addItem(
-                                      {
-                                        id: prod.id,
-                                        name: prod.name,
-                                        description: prod.description,
-                                        price: prod.price,
-                                        images: prod.images,
-                                      },
-                                      quantity
-                                    );
-                                    setQuantity(1);
-                                    toast(`Added ${quantity} to cart`);
-                                  }}
+                                  variant="outline"
+                                  color={Enums.Color.Secondary}
+                                  onClick={() => setQuantity(quantity - 1)}
                                 >
-                                  <Icon className="me-2" icon={(x) => x.cilCart} />
-                                  Add {quantity} to Cart
+                                  <Icon icon={(x) => x.cilMinus} />
+                                </ActionButton>
+                                <NumberInput
+                                  className="d-inline-block w-auto"
+                                  onChange={handleQuantityChange}
+                                  value={quantity}
+                                  min={1}
+                                  allowDecimals={false}
+                                  hideDefaultHelperText
+                                />
+                                <ActionButton
+                                  variant="outline"
+                                  color={Enums.Color.Secondary}
+                                  onClick={() => setQuantity(quantity + 1)}
+                                >
+                                  <Icon icon={(x) => x.cilPlus} />
                                 </ActionButton>
                               </div>
-                            )}
-                          </MicroToast>
+                              <Clickable
+                                className="small text-muted d-block"
+                                onClick={() => setQuantity(1)}
+                              >
+                                Reset Quantity
+                              </Clickable>
+                              <MicroToast
+                                children={(toast) => (
+                                  <ActionButton
+                                    className="d-inline-block my-3"
+                                    onClick={() => {
+                                      addItem(
+                                        {
+                                          id: prod.id,
+                                          name: prod.name,
+                                          description: prod.description,
+                                          price: prod.price,
+                                          images: prod.images,
+                                        },
+                                        quantity
+                                      );
+                                      setQuantity(1);
+                                      toast(`Added ${quantity} to cart`);
+                                    }}
+                                  >
+                                    <Icon className="me-2" icon={(x) => x.cilCart} />
+                                    Add {quantity} to Cart
+                                  </ActionButton>
+                                )}
+                              />
+                            </div>
                         </Col>
                       </Row>
                     </Col>
