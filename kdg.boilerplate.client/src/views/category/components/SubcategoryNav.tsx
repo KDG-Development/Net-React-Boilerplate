@@ -13,13 +13,13 @@ export const SubcategoryNav = (props: SubcategoryNavProps) => {
   if (props.subcategories.length === 0) return null;
 
   return (
-    <div className="mb-4">
+    <div className="mb-4 border-bottom border-bottom-light pb-4">
       <h6 className="text-muted mb-3">Browse Subcategories</h6>
       <div className="d-flex flex-wrap gap-2">
         {props.subcategories.map(sub => (
           <ActionButton
             key={sub.id}
-            color={Enums.Color.Secondary}
+            color={Enums.Color.Primary}
             variant="outline"
             onClick={() => navigate(`${ROUTE_BASE.Categories}/${sub.fullPath}`)}
           >

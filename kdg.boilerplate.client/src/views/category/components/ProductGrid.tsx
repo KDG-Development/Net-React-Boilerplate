@@ -3,6 +3,7 @@ import { TProduct } from "../../../types/product/product";
 import { PaginatedResponse } from "../../../types/common/pagination";
 import { formatCurrency } from "../../../util/format";
 import { Pagination } from "./Pagination";
+import placeholderImage from "../../../assets/images/logo.png";
 
 type ProductGridProps = {
   data: PaginatedResponse<TProduct> | null;
@@ -12,20 +13,22 @@ type ProductGridProps = {
 
 const ProductCard = (props: { product: TProduct }) => (
   <Card
+    className="shadow-none"
     body={{
       content: (
         <>
-          <div className="bg-light mb-3 d-flex align-items-center justify-content-center product-image-container">
-            {props.product.image ? (
-              <Image 
-                src={props.product.image} 
-                className="img-fluid product-image"
-              />
-            ) : (
-              <span className="text-muted">No Image</span>
-            )}
+          <div className="mb-3 d-flex align-items-center justify-content-center product-image-container">
+            <Image 
+              src={props.product.image || placeholderImage} 
+              className="img-fluid product-image"
+            />
           </div>
           <h6 className="card-title mb-2">{props.product.name}</h6>
+          {props.product.description && (
+            <p className="card-text text-muted small mb-2 text-truncate">
+              {props.product.description}
+            </p>
+          )}
           <p className="card-text text-primary fw-bold mt-auto mb-0">
             {formatCurrency(props.product.price)}
           </p>

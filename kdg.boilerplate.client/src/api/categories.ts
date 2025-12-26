@@ -77,6 +77,7 @@ export const getCategoryProducts = async (
           id: p.id as string,
           name: p.name as string,
           image: '', // No image field in DB yet
+          description: (p.description as string) ?? null,
           price: p.price as number,
         })),
         page: data.page as number,

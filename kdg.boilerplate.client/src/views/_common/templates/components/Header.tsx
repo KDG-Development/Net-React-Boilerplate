@@ -1,7 +1,9 @@
 import { Icon, Image, Nav, Row, TextInput } from "kdg-react";
+import { Link } from "react-router-dom";
 import logo from "../../../../assets/images/logo.png";
 import { CategoryMegaMenu } from "./CategoryMegaMenu";
 import { CartWidget } from "./CartWidget";
+import { ROUTE_PATH } from "../../../../routing/AppRouter";
 
 export const Header = () => {
   return (
@@ -19,7 +21,9 @@ export const Header = () => {
       <div className="py-4 border-bottom border-bottom-light">
         <Row>
           <div className="d-flex align-items-center">
-            <Image src={logo} width={150} />
+            <Link to={ROUTE_PATH.Home}>
+              <Image src={logo} width={150} />
+            </Link>
             <Nav
               navClassName="flex-grow-1 gap-3 mx-3"
               items={[
