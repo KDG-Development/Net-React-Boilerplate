@@ -105,6 +105,26 @@ public class ProductRepository : IProductRepository
                 Price = r.Price
             }).ToList();
 
+            // Fetch images for all products in a single query
+            if (products.Count > 0)
+            {
+                var productIds = products.Select(p => p.Id).ToArray();
+                var images = await connection.QueryAsync<ProductImage>(
+                    @"SELECT id, product_id AS ProductId, src, sort_order AS SortOrder
+                      FROM product_images
+                      WHERE product_id = ANY(@ProductIds)
+                      ORDER BY sort_order",
+                    new { ProductIds = productIds }
+                );
+
+                var imagesByProduct = images.ToLookup(i => i.ProductId);
+
+                foreach (var product in products)
+                {
+                    product.Images = imagesByProduct[product.Id].ToList();
+                }
+            }
+
             return (products, totalCount);
         });
     }

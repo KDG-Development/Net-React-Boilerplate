@@ -1,7 +1,14 @@
+export type TProductImage = {
+  id: string;
+  productId: string;
+  src: string;
+  sortOrder: number;
+};
+
 export type TProduct = {
   id: string;
   name: string;
-  image: string;
+  images: TProductImage[];
   description: string | null;
   price: number;
 };

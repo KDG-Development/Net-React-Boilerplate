@@ -56,6 +56,29 @@ public class ProductSeeder : ISeeder
                         product.Price
                     }
                 );
+
+                // Add 1-5 images per product
+                var imageCount = faker.Random.Int(1, 5);
+                var imageSizes = new[] { "300/300", "301/301", "201/201" };
+                
+                for (var imgIndex = 0; imgIndex < imageCount; imgIndex++)
+                {
+                    var size = imageSizes[imgIndex % imageSizes.Length];
+                    var src = $"https://picsum.photos/{size}?random={Guid.NewGuid()}";
+                    
+                    await conn.ExecuteAsync(
+                        @"INSERT INTO product_images (id, product_id, src, sort_order)
+                          VALUES (@Id, @ProductId, @Src, @SortOrder)",
+                        new
+                        {
+                            Id = Guid.NewGuid(),
+                            ProductId = product.Id,
+                            Src = src,
+                            SortOrder = imgIndex
+                        }
+                    );
+                }
+
                 return true;
             });
 

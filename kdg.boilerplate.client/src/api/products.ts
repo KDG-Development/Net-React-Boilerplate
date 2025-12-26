@@ -1,7 +1,7 @@
 import { RequestMethodArgs } from "kdg-react"
 import { Api } from "./_common"
 import { PaginatedResponse, PaginationParams } from "../types/common/pagination"
-import { TProduct, ProductFilterParams } from "../types/product/product"
+import { TProduct, TProductImage, ProductFilterParams } from "../types/product/product"
 
 export const getProducts = async (
   args: RequestMethodArgs<PaginatedResponse<TProduct>> & { 
@@ -22,20 +22,24 @@ export const getProducts = async (
     }),
     success: args.success,
     errorHandler: args.errorHandler,
-    mapResult: (response: unknown): PaginatedResponse<TProduct> => {
-      const data = response as Record<string, unknown>;
+    mapResult: (data: any): PaginatedResponse<TProduct> => {
       return {
-        items: (data.items as Array<Record<string, unknown>>).map(p => ({
-          id: p.id as string,
-          name: p.name as string,
-          image: '', // No image field in DB yet
-          description: (p.description as string) ?? null,
-          price: p.price as number,
+        items: data.items.map((p: any):TProduct => ({
+          id: p.id,
+          name: p.name,
+          images: (p.images).map((i:any):TProductImage => ({
+            id: i.id,
+            productId: i.productId,
+            src: i.src,
+            sortOrder: i.sortOrder,
+          })),
+          description: p.description,
+          price: p.price,
         })),
-        page: data.page as number,
-        pageSize: data.pageSize as number,
-        totalCount: data.totalCount as number,
-        totalPages: data.totalPages as number,
+        page: data.page,
+        pageSize: data.pageSize,
+        totalCount: data.totalCount,
+        totalPages: data.totalPages,
       };
     }
   })

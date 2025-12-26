@@ -12,32 +12,36 @@ type ProductGridProps = {
   onPageChange: (page: number) => void;
 };
 
-const ProductCard = (props: { product: TProduct }) => (
-  <Card
-    className="shadow-none"
-    body={{
-      content: (
-        <>
-          <div className="mb-3 d-flex align-items-center justify-content-center product-image-container">
-            <Image 
-              src={props.product.image || placeholderImage} 
-              className="img-fluid product-image"
-            />
-          </div>
-          <h6 className="card-title mb-2">{props.product.name}</h6>
-          {props.product.description && (
-            <p className="card-text text-muted small mb-2 text-truncate">
+const ProductCard = (props: { product: TProduct }) => {
+  const primaryImage = props.product.images[0]?.src ?? placeholderImage;
+
+  return (
+    <Card
+      className="shadow-none"
+      body={{
+        content: (
+          <>
+            <div className="mb-3 d-flex align-items-center justify-content-center product-image-container">
+              <Image 
+                src={primaryImage} 
+                className="img-fluid product-image"
+              />
+            </div>
+          <div className="product-info">
+            <p className="product-title small fw-semibold mb-1 text-truncate">{props.product.name}</p>
+            <p className="product-description text-muted small mb-2 text-truncate">
               {props.product.description}
             </p>
-          )}
-          <p className="card-text text-primary fw-bold mt-auto mb-0">
-            {formatCurrency(props.product.price)}
-          </p>
+            <p className="product-price text-primary fw-bold mb-0">
+              {formatCurrency(props.product.price)}
+            </p>
+          </div>
         </>
       ),
     }}
   />
-);
+  );
+};
 
 export const ProductGrid = (props: ProductGridProps) => {
 
