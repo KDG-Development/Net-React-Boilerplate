@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Col, Row, Conditional, EntityConditional, Image, Icon, Clickable, NumberInput, ActionButton } from "kdg-react";
+import { Col, Row, Conditional, EntityConditional, Image, Icon, Clickable, NumberInput, ActionButton, Enums } from "kdg-react";
 import { BaseTemplate } from "../_common/templates/BaseTemplate";
 import { getProductById } from "../../api/products";
 import { TProductDetail } from "../../types/product/product";
@@ -8,6 +8,7 @@ import { useCartContext } from "../../context/CartContext";
 import { formatCurrency } from "../../util/format";
 import { ROUTE_PATH } from "../../routing/AppRouter";
 import { ProductDetailSkeleton } from "./components/ProductDetailSkeleton";
+import { MicroToast } from "../../components/MicroToast";
 import placeholderImage from "../../assets/images/logo.png";
 
 export const ProductDetailPage = () => {
@@ -19,6 +20,12 @@ export const ProductDetailPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  const handleQuantityChange = (value: number | null) => {
+    if (value !== null && value >= 1) {
+      setQuantity(value);
+    }
+  };
 
   useEffect(() => {
     if (!productId) {
@@ -47,27 +54,6 @@ export const ProductDetailPage = () => {
       },
     });
   }, [productId]);
-
-  const handleAddToCart = () => {
-    if (!product) return;
-    addItem(
-      {
-        id: product.id,
-        name: product.name,
-        description: product.description,
-        price: product.price,
-        images: product.images,
-      },
-      quantity
-    );
-    setQuantity(1);
-  };
-
-  const handleQuantityChange = (value: number | null) => {
-    if (value !== null && value >= 1) {
-      setQuantity(value);
-    }
-  };
 
   const selectedImage = product?.images[selectedImageIndex]?.src ?? product?.images[0]?.src ?? placeholderImage;
 
@@ -169,23 +155,62 @@ export const ProductDetailPage = () => {
                           </p>
 
                           {/* Quantity and Add to Cart */}
-                          <div className="d-flex align-items-center gap-3">
-                            <div>
-                              <NumberInput
-                                onChange={handleQuantityChange}
-                                value={quantity}
-                                min={1}
-                                allowDecimals={false}
-                                hideDefaultHelperText
-                              />
-                            </div>
-                            <ActionButton
-                              onClick={handleAddToCart}
-                            >
-                              <Icon className="me-2" icon={(x) => x.cilCart} />
-                              Add to Cart
-                            </ActionButton>
-                          </div>
+                          <MicroToast>
+                            {(toast) => (
+                              <div className="">
+                                <div className="d-flex align-items-center gap-2 my-3">
+                                  <ActionButton
+                                    variant="outline"
+                                    color={Enums.Color.Secondary}
+                                    onClick={() => setQuantity(quantity - 1)}
+                                  >
+                                    <Icon icon={(x) => x.cilMinus} />
+                                  </ActionButton>
+                                  <NumberInput
+                                    className="d-inline-block w-auto"
+                                    onChange={handleQuantityChange}
+                                    value={quantity}
+                                    min={1}
+                                    allowDecimals={false}
+                                    hideDefaultHelperText
+                                  />
+                                  <ActionButton
+                                    variant="outline"
+                                    color={Enums.Color.Secondary}
+                                    onClick={() => setQuantity(quantity + 1)}
+                                  >
+                                    <Icon icon={(x) => x.cilPlus} />
+                                  </ActionButton>
+                                </div>
+                                <Clickable
+                                  className="small text-muted d-block"
+                                  onClick={() => setQuantity(1)}
+                                >
+                                  Reset Quantity
+                                </Clickable>
+                                <ActionButton
+                                  className="d-inline-block my-3"
+                                  onClick={() => {
+                                    addItem(
+                                      {
+                                        id: prod.id,
+                                        name: prod.name,
+                                        description: prod.description,
+                                        price: prod.price,
+                                        images: prod.images,
+                                      },
+                                      quantity
+                                    );
+                                    setQuantity(1);
+                                    toast(`Added ${quantity} to cart`);
+                                  }}
+                                >
+                                  <Icon className="me-2" icon={(x) => x.cilCart} />
+                                  Add {quantity} to Cart
+                                </ActionButton>
+                              </div>
+                            )}
+                          </MicroToast>
                         </Col>
                       </Row>
                     </Col>

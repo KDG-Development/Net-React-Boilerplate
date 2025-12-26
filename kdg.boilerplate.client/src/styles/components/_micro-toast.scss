@@ -1,0 +1,37 @@
+@use '../variables' as *;
+
+@keyframes micro-toast-float-up {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-24px);
+  }
+}
+
+.micro-toast-container {
+  position: relative;
+}
+
+.micro-toast {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+
+  padding: 6px 12px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #fff;
+  background-color: #2d3748;
+  border-radius: $radius-md;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+  animation: micro-toast-float-up 1.5s ease-out forwards;
+}
+
