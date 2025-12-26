@@ -7,10 +7,10 @@ namespace KDG.Boilerplate.Services;
 
 public interface IProductRepository
 {
-    Task<(List<Product> Items, int TotalCount)> GetPaginatedByCategoryAsync(
-        Guid categoryId, 
+    Task<(List<Product> Items, int TotalCount)> GetPaginatedAsync(
         int offset, 
         int limit,
+        Guid? categoryId = null,
         ProductFilterParams? filters = null);
 }
 
@@ -23,38 +23,65 @@ public class ProductRepository : IProductRepository
         _database = database;
     }
 
-    public async Task<(List<Product> Items, int TotalCount)> GetPaginatedByCategoryAsync(
-        Guid categoryId, 
+    public async Task<(List<Product> Items, int TotalCount)> GetPaginatedAsync(
         int offset, 
         int limit,
+        Guid? categoryId = null,
         ProductFilterParams? filters = null)
     {
         return await _database.WithConnection(async connection =>
         {
-            var priceFilter = "";
+            var conditions = new List<string>();
+            
             if (filters?.MinPrice.HasValue == true)
-                priceFilter += " AND p.price >= @MinPrice";
+                conditions.Add("p.price >= @MinPrice");
             if (filters?.MaxPrice.HasValue == true)
-                priceFilter += " AND p.price < @MaxPrice";
+                conditions.Add("p.price < @MaxPrice");
 
-            var sql = $@"
-                WITH RECURSIVE category_tree AS (
-                    SELECT id FROM categories WHERE id = @CategoryId
-                    UNION ALL
-                    SELECT c.id FROM categories c
-                    JOIN category_tree ct ON c.parent_id = ct.id
-                )
-                SELECT 
-                    p.id, 
-                    p.category_id AS CategoryId, 
-                    p.name, 
-                    p.description, 
-                    p.price,
-                    COUNT(*) OVER() AS TotalCount
-                FROM products p
-                WHERE p.category_id IN (SELECT id FROM category_tree){priceFilter}
-                ORDER BY p.name
-                LIMIT @Limit OFFSET @Offset";
+            string sql;
+            if (categoryId.HasValue)
+            {
+                var categoryCondition = "p.category_id IN (SELECT id FROM category_tree)";
+                conditions.Insert(0, categoryCondition);
+                
+                sql = $@"
+                    WITH RECURSIVE category_tree AS (
+                        SELECT id FROM categories WHERE id = @CategoryId
+                        UNION ALL
+                        SELECT c.id FROM categories c
+                        JOIN category_tree ct ON c.parent_id = ct.id
+                    )
+                    SELECT 
+                        p.id, 
+                        p.category_id AS CategoryId, 
+                        p.name, 
+                        p.description, 
+                        p.price,
+                        COUNT(*) OVER() AS TotalCount
+                    FROM products p
+                    WHERE {string.Join(" AND ", conditions)}
+                    ORDER BY p.name
+                    LIMIT @Limit OFFSET @Offset";
+            }
+            else
+            {
+                var whereClause = conditions.Count > 0 
+                    ? "WHERE " + string.Join(" AND ", conditions)
+                    : "";
+
+                sql = $@"
+                    SELECT 
+                        p.id, 
+                        p.category_id AS CategoryId, 
+                        p.name, 
+                        p.description, 
+                        p.price,
+                        COUNT(*) OVER() AS TotalCount
+                    FROM products p
+                    {whereClause}
+                    ORDER BY p.name
+                    LIMIT @Limit OFFSET @Offset";
+            }
 
             var results = (await connection.QueryAsync<ProductWithCount>(sql, new { 
                 CategoryId = categoryId, 
@@ -88,4 +115,3 @@ public class ProductRepository : IProductRepository
         public int TotalCount { get; set; }
     }
 }
-

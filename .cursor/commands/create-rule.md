@@ -1,3 +1,0 @@
-- Write a concise, hyphenated instruction list
-- Use brief statements, each starting with a hyphen
-- Match formatting style of existing rules

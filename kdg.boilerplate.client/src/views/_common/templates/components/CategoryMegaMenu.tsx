@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCategories } from "../../../../api/categories";
 import { MegaMenu, CategoryTree } from "./MegaMenu";
@@ -22,17 +22,23 @@ export const CategoryMegaMenu = (props: CategoryMegaMenuProps) => {
     });
   }, []);
 
+  const categoriesWithAllProducts = useMemo(() => {
+    if (!categories) return null;
+    return {
+      __all__: { label: "All Products", fullPath: "" },
+      ...categories,
+    };
+  }, [categories]);
+
   const handleSelect = useCallback((fullPath: string) => {
-    if (fullPath) {
-      navigate(`${ROUTE_BASE.Categories}/${fullPath}`);
-    }
+    navigate(fullPath ? `${ROUTE_BASE.Products}/${fullPath}` : ROUTE_BASE.Products);
     props.onCategorySelect?.(fullPath);
   }, [navigate, props.onCategorySelect]);
 
   return (
     <MegaMenu
       trigger={<span>Products</span>}
-      categories={categories}
+      categories={categoriesWithAllProducts}
       loading={loading}
       onSelect={handleSelect}
     />

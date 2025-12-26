@@ -1,8 +1,6 @@
 import { RequestMethodArgs } from "kdg-react"
 import { CategoryTree, CategoryNode } from "../views/_common/templates/components/MegaMenu"
 import { Api } from "./_common"
-import { PaginatedResponse, PaginationParams } from "../types/common/pagination"
-import { TProduct, ProductFilterParams } from "../types/product/product"
 import { CategoryDetail } from "../types/category/category"
 
 export const getCategories = async (args: RequestMethodArgs<CategoryTree>) => {
@@ -50,42 +48,6 @@ export const getCategoryByPath = async (args: RequestMethodArgs<CategoryDetail> 
           name: s.name as string,
           fullPath: s.fullPath as string,
         })),
-      };
-    }
-  })
-}
-
-export const getCategoryProducts = async (
-  args: RequestMethodArgs<PaginatedResponse<TProduct>> & { 
-    categoryId: string; 
-    pagination: PaginationParams;
-    filters?: ProductFilterParams;
-  }
-) => {
-  await Api.Request.Get({
-    url: `${Api.BASE_URL}/categories/${args.categoryId}/products`,
-    parameters: Api.composeQueryParams({
-      page: args.pagination.page,
-      pageSize: args.pagination.pageSize,
-      minPrice: args.filters?.minPrice,
-      maxPrice: args.filters?.maxPrice,
-    }),
-    success: args.success,
-    errorHandler: args.errorHandler,
-    mapResult: (response: unknown): PaginatedResponse<TProduct> => {
-      const data = response as Record<string, unknown>;
-      return {
-        items: (data.items as Array<Record<string, unknown>>).map(p => ({
-          id: p.id as string,
-          name: p.name as string,
-          image: '', // No image field in DB yet
-          description: (p.description as string) ?? null,
-          price: p.price as number,
-        })),
-        page: data.page as number,
-        pageSize: data.pageSize as number,
-        totalCount: data.totalCount as number,
-        totalPages: data.totalPages as number,
       };
     }
   })

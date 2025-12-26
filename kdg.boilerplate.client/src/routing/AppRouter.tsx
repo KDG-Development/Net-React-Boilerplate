@@ -8,15 +8,14 @@ import { CategoryPage } from '../views/category/CategoryPage'
 import { tryParseJWT, isTokenExpired } from '../util/jwt'
 
 export const ROUTE_BASE = {
-  Categories: '/categories',
+  Products: '/products',
 } as const;
 
 export const ROUTE_PATH = {
   NOT_FOUND: '*',
   LOGIN: '/login',
   Home: '/',
-  Categories: `${ROUTE_BASE.Categories}/*`,
-  Products: '/products',
+  Products: `${ROUTE_BASE.Products}/*`,
   Favorites: '/favorites',
   MyAccount: '/my-account',
 } as const;
@@ -82,7 +81,7 @@ export const AppRouter = () => {
             },
             {
               kind:RouteType.PRIVATE,
-              paths:[ROUTE_PATH.Categories],
+              paths:[ROUTE_PATH.Products],
               gate:{
                 allow:!!user,
                 onNotAllow:{

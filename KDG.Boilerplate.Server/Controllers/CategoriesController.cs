@@ -1,4 +1,3 @@
-using KDG.Boilerplate.Server.Models.Common;
 using KDG.Boilerplate.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,14 +10,10 @@ namespace KDG.Boilerplate.Server.Controllers;
 public class CategoriesController : ControllerBase
 {
     private readonly ICategoryService _categoryService;
-    private readonly IProductService _productService;
 
-    public CategoriesController(
-        ICategoryService categoryService,
-        IProductService productService)
+    public CategoriesController(ICategoryService categoryService)
     {
         _categoryService = categoryService;
-        _productService = productService;
     }
 
     [HttpGet]
@@ -48,15 +43,5 @@ public class CategoriesController : ControllerBase
         }
 
         return Ok(category);
-    }
-
-    [HttpGet("{id:guid}/products")]
-    public async Task<IActionResult> GetCategoryProducts(
-        Guid id,
-        [FromQuery] PaginationParams pagination,
-        [FromQuery] ProductFilterParams filters)
-    {
-        var products = await _productService.GetProductsByCategoryAsync(id, pagination, filters);
-        return Ok(products);
     }
 }

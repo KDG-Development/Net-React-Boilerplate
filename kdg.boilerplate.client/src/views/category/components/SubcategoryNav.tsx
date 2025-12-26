@@ -21,7 +21,7 @@ export const SubcategoryNav = (props: SubcategoryNavProps) => {
             key={sub.id}
             color={Enums.Color.Primary}
             variant="outline"
-            onClick={() => navigate(`${ROUTE_BASE.Categories}/${sub.fullPath}`)}
+            onClick={() => navigate(`${ROUTE_BASE.Products}/${sub.fullPath}`)}
           >
             {sub.name}
           </ActionButton>

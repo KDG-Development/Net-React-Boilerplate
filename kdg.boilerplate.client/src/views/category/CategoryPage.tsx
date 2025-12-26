@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Col, Row } from "kdg-react";
 import { BaseTemplate } from "../_common/templates/BaseTemplate";
-import { getCategoryByPath, getCategoryProducts } from "../../api/categories";
+import { getCategoryByPath, getCategories } from "../../api/categories";
+import { getProducts } from "../../api/products";
+import { CategoryTree } from "../_common/templates/components/MegaMenu";
 import { TProduct } from "../../types/product/product";
 import { PaginatedResponse } from "../../types/common/pagination";
 import { usePagination } from "../../hooks/usePagination";
@@ -12,13 +14,15 @@ import { ProductGrid } from "./components/ProductGrid";
 import { FilterSidebar } from "./components/FilterSidebar";
 import { CategoryPageSkeleton } from "./components/CategoryPageSkeleton";
 import { ROUTE_BASE } from "../../routing/AppRouter";
-import { CategoryDetail } from "../../types/category/category";
+import { CategoryDetail, SubcategoryInfo } from "../../types/category/category";
 
 export const CategoryPage = () => {
   const params = useParams();
   const path = params['*'] || '';
+  const isRootView = !path;
 
   const [category, setCategory] = useState<CategoryDetail | null>(null);
+  const [topLevelCategories, setTopLevelCategories] = useState<SubcategoryInfo[]>([]);
   const [products, setProducts] = useState<PaginatedResponse<TProduct> | null>(null);
   const [loading, setLoading] = useState(true);
   const [productsLoading, setProductsLoading] = useState(false);
@@ -27,42 +31,59 @@ export const CategoryPage = () => {
   const { pagination, setPage } = usePagination();
   const { filters, selectedPriceRange, setPriceRange } = useProductFilters();
 
-  // Load category details
+  // Load category details or top-level categories for root view
   useEffect(() => {
-    if (!path) {
-      setError('No category path provided');
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
-    getCategoryByPath({
-      path,
-      success: (data) => {
-        setCategory(data);
-        setLoading(false);
-      },
-      errorHandler: (e) => {
-        if (e.status === 404) {
-          setError('Category not found');
-        } else {
-          setError('Failed to load category');
+    if (isRootView) {
+      // Root view: fetch top-level categories
+      getCategories({
+        success: (data: CategoryTree) => {
+          const topLevel = Object.entries(data).map(([id, node]) => ({
+            id,
+            name: node.label,
+            fullPath: node.fullPath,
+          }));
+          setTopLevelCategories(topLevel);
+          setCategory(null);
+          setLoading(false);
+        },
+        errorHandler: () => {
+          setError('Failed to load categories');
+          setLoading(false);
         }
-        setLoading(false);
-      }
-    });
-  }, [path]);
+      });
+    } else {
+      // Category view: fetch category by path
+      getCategoryByPath({
+        path,
+        success: (data) => {
+          setCategory(data);
+          setTopLevelCategories([]);
+          setLoading(false);
+        },
+        errorHandler: (e) => {
+          if (e.status === 404) {
+            setError('Category not found');
+          } else {
+            setError('Failed to load category');
+          }
+          setLoading(false);
+        }
+      });
+    }
+  }, [path, isRootView]);
 
-  // Load products when category, pagination, or filters change
+  // Load products when view type, category, pagination, or filters change
   useEffect(() => {
-    if (!category) return;
+    if (loading) return;
+    if (!isRootView && !category) return;
 
     setProductsLoading(true);
 
-    getCategoryProducts({
-      categoryId: category.id,
+    getProducts({
+      categoryId: category?.id,
       pagination,
       filters,
       success: (data) => {
@@ -74,7 +95,7 @@ export const CategoryPage = () => {
         setProductsLoading(false);
       }
     });
-  }, [category, pagination.page, pagination.pageSize, filters.minPrice, filters.maxPrice]);
+  }, [isRootView, category, loading, pagination.page, pagination.pageSize, filters.minPrice, filters.maxPrice]);
 
   if (loading) {
     return (
@@ -84,7 +105,7 @@ export const CategoryPage = () => {
     );
   }
 
-  if (error || !category) {
+  if (error || (!isRootView && !category)) {
     return (
       <BaseTemplate>
         <Row>
@@ -101,6 +122,9 @@ export const CategoryPage = () => {
     );
   }
 
+  const pageTitle = isRootView ? 'All Products' : category?.name || '';
+  const subcategories = isRootView ? topLevelCategories : (category?.subcategories || []);
+
   return (
     <BaseTemplate>
       <Row>
@@ -108,30 +132,38 @@ export const CategoryPage = () => {
           {/* Breadcrumbs */}
           <nav aria-label="breadcrumb" className="mb-4">
             <ol className="breadcrumb">
-              <li className="breadcrumb-item">
-                <Link to="/">Home</Link>
-              </li>
-              {category.breadcrumbs.map((crumb, idx) => (
-                <li 
-                  key={crumb.id} 
-                  className={`breadcrumb-item ${idx === category.breadcrumbs.length - 1 ? 'active' : ''}`}
-                  aria-current={idx === category.breadcrumbs.length - 1 ? 'page' : undefined}
-                >
-                  {idx === category.breadcrumbs.length - 1 ? (
-                    crumb.name
-                  ) : (
-                    <Link to={`${ROUTE_BASE.Categories}/${crumb.fullPath}`}>{crumb.name}</Link>
-                  )}
+              {isRootView ? (
+                <li className="breadcrumb-item active" aria-current="page">
+                  Products
                 </li>
-              ))}
+              ) : (
+                <>
+                  <li className="breadcrumb-item">
+                    <Link to={ROUTE_BASE.Products}>Products</Link>
+                  </li>
+                  {category?.breadcrumbs.map((crumb, idx) => (
+                    <li 
+                      key={crumb.id} 
+                      className={`breadcrumb-item ${idx === category.breadcrumbs.length - 1 ? 'active' : ''}`}
+                      aria-current={idx === category.breadcrumbs.length - 1 ? 'page' : undefined}
+                    >
+                      {idx === category.breadcrumbs.length - 1 ? (
+                        crumb.name
+                      ) : (
+                        <Link to={`${ROUTE_BASE.Products}/${crumb.fullPath}`}>{crumb.name}</Link>
+                      )}
+                    </li>
+                  ))}
+                </>
+              )}
             </ol>
           </nav>
 
-          {/* Category Title */}
-          <h1 className="mb-4">{category.name}</h1>
+          {/* Page Title */}
+          <h1 className="mb-4">{pageTitle}</h1>
 
           {/* Subcategory Navigation */}
-          <SubcategoryNav subcategories={category.subcategories} />
+          <SubcategoryNav subcategories={subcategories} />
 
           <Row>
             {/* Filter Sidebar */}
@@ -156,4 +188,3 @@ export const CategoryPage = () => {
     </BaseTemplate>
   );
 };
-
