@@ -4,7 +4,7 @@ import { Clickable, Icon, Loader } from "kdg-react";
 // Recursive category type with dictionary children for O(1) lookups
 export type CategoryNode = {
   label: string;
-  fullPath: string;
+  slug: string;
   children?: CategoryTree;
 };
 
@@ -14,7 +14,7 @@ type MegaMenuProps = {
   trigger: React.ReactNode;
   categories: CategoryTree | null;
   loading?: boolean;
-  onSelect?: (fullPath: string) => void;
+  onSelect?: (slug: string) => void;
 };
 
 type MegaMenuPanelProps = {
@@ -119,9 +119,7 @@ export const MegaMenu = (props: MegaMenuProps) => {
 
   const handleClick = useCallback(
     (_depth: number, _id: string, item: CategoryNode) => {
-      // Always navigate on click - hovering handles expansion
-      // Use the server-provided fullPath directly
-      props.onSelect?.(item.fullPath);
+      props.onSelect?.(item.slug);
       setIsOpen(false);
       setSelectedPath([]);
     },

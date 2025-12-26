@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { ActionButton, Enums } from "kdg-react";
-import { ROUTE_BASE } from "../../../routing/AppRouter";
+import { ROUTE_PATH } from "../../../routing/AppRouter";
 import { SubcategoryInfo } from "../../../types/category/category";
 
 type SubcategoryNavProps = {
@@ -21,7 +21,7 @@ export const SubcategoryNav = (props: SubcategoryNavProps) => {
             key={sub.id}
             color={Enums.Color.Primary}
             variant="outline"
-            onClick={() => navigate(`${ROUTE_BASE.Products}/${sub.fullPath}`)}
+            onClick={() => navigate(`${ROUTE_PATH.Products}?category=${sub.slug}`)}
           >
             {sub.name}
           </ActionButton>

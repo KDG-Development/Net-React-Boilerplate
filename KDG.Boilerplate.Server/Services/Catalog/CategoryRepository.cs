@@ -33,15 +33,15 @@ public class CategoryRepository : ICategoryRepository
         });
     }
 
-    public async Task<Category?> GetByPathAsync(string fullPath)
+    public async Task<Category?> GetByPathAsync(string slug)
     {
         return await _database.WithConnection(async connection =>
         {
             var sql = @"
                 SELECT id, parent_id AS ParentId, name, full_path AS FullPath
                 FROM category_slugs
-                WHERE full_path = @FullPath";
-            return await connection.QueryFirstOrDefaultAsync<Category>(sql, new { FullPath = fullPath });
+                WHERE full_path = @Slug OR full_path LIKE '%/' || @Slug";
+            return await connection.QueryFirstOrDefaultAsync<Category>(sql, new { Slug = slug });
         });
     }
 

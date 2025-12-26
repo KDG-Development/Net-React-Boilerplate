@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { Col, Row } from "kdg-react";
 import { BaseTemplate } from "../_common/templates/BaseTemplate";
 import { getCategoryByPath, getCategories } from "../../api/categories";
@@ -13,13 +13,13 @@ import { SubcategoryNav } from "./components/SubcategoryNav";
 import { ProductGrid } from "./components/ProductGrid";
 import { FilterSidebar } from "./components/FilterSidebar";
 import { CategoryPageSkeleton } from "./components/CategoryPageSkeleton";
-import { ROUTE_BASE } from "../../routing/AppRouter";
+import { ROUTE_PATH } from "../../routing/AppRouter";
 import { CategoryDetail, SubcategoryInfo } from "../../types/category/category";
 
 export const CategoryPage = () => {
-  const params = useParams();
-  const path = params['*'] || '';
-  const isRootView = !path;
+  const [searchParams] = useSearchParams();
+  const slug = searchParams.get('category') || '';
+  const isRootView = !slug;
 
   const [category, setCategory] = useState<CategoryDetail | null>(null);
   const [topLevelCategories, setTopLevelCategories] = useState<SubcategoryInfo[]>([]);
@@ -43,7 +43,7 @@ export const CategoryPage = () => {
           const topLevel = Object.entries(data).map(([id, node]) => ({
             id,
             name: node.label,
-            fullPath: node.fullPath,
+            slug: node.slug,
           }));
           setTopLevelCategories(topLevel);
           setCategory(null);
@@ -55,9 +55,9 @@ export const CategoryPage = () => {
         }
       });
     } else {
-      // Category view: fetch category by path
+      // Category view: fetch category by slug
       getCategoryByPath({
-        path,
+        path: slug,
         success: (data) => {
           setCategory(data);
           setTopLevelCategories([]);
@@ -73,7 +73,7 @@ export const CategoryPage = () => {
         }
       });
     }
-  }, [path, isRootView]);
+  }, [slug, isRootView]);
 
   // Load products when view type, category, pagination, or filters change
   useEffect(() => {
@@ -139,7 +139,7 @@ export const CategoryPage = () => {
               ) : (
                 <>
                   <li className="breadcrumb-item">
-                    <Link to={ROUTE_BASE.Products}>Products</Link>
+                    <Link to={ROUTE_PATH.Products}>Products</Link>
                   </li>
                   {category?.breadcrumbs.map((crumb, idx) => (
                     <li 
@@ -150,7 +150,7 @@ export const CategoryPage = () => {
                       {idx === category.breadcrumbs.length - 1 ? (
                         crumb.name
                       ) : (
-                        <Link to={`${ROUTE_BASE.Products}/${crumb.fullPath}`}>{crumb.name}</Link>
+                        <Link to={`${ROUTE_PATH.Products}?category=${crumb.slug}`}>{crumb.name}</Link>
                       )}
                     </li>
                   ))}

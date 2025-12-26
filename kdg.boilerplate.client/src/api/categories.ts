@@ -7,7 +7,7 @@ export const getCategories = async (args: RequestMethodArgs<CategoryTree>) => {
   const mapCategory = (category: any): CategoryNode => {
     return {
       label: category.label,
-      fullPath: category.fullPath,
+      slug: category.slug,
       children: category.children
         ? Object.fromEntries(
             Object.entries(category.children).map(([key, child]) => [key, mapCategory(child)])
@@ -37,16 +37,16 @@ export const getCategoryByPath = async (args: RequestMethodArgs<CategoryDetail> 
       return {
         id: data.id as string,
         name: data.name as string,
-        fullPath: data.fullPath as string,
+        slug: data.slug as string,
         breadcrumbs: (data.breadcrumbs as Array<Record<string, unknown>>).map(b => ({
           id: b.id as string,
           name: b.name as string,
-          fullPath: b.fullPath as string,
+          slug: b.slug as string,
         })),
         subcategories: (data.subcategories as Array<Record<string, unknown>>).map(s => ({
           id: s.id as string,
           name: s.name as string,
-          fullPath: s.fullPath as string,
+          slug: s.slug as string,
         })),
       };
     }

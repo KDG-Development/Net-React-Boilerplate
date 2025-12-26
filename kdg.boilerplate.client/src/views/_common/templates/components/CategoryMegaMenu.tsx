@@ -2,10 +2,10 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCategories } from "../../../../api/categories";
 import { MegaMenu, CategoryTree } from "./MegaMenu";
-import { ROUTE_BASE } from "../../../../routing/AppRouter";
+import { ROUTE_PATH } from "../../../../routing/AppRouter";
 
 type CategoryMegaMenuProps = {
-  onCategorySelect?: (fullPath: string) => void;
+  onCategorySelect?: (slug: string) => void;
 };
 
 export const CategoryMegaMenu = (props: CategoryMegaMenuProps) => {
@@ -25,14 +25,14 @@ export const CategoryMegaMenu = (props: CategoryMegaMenuProps) => {
   const categoriesWithAllProducts = useMemo(() => {
     if (!categories) return null;
     return {
-      __all__: { label: "All Products", fullPath: "" },
+      __all__: { label: "All Products", slug: "" },
       ...categories,
     };
   }, [categories]);
 
-  const handleSelect = useCallback((fullPath: string) => {
-    navigate(fullPath ? `${ROUTE_BASE.Products}/${fullPath}` : ROUTE_BASE.Products);
-    props.onCategorySelect?.(fullPath);
+  const handleSelect = useCallback((slug: string) => {
+    navigate(slug ? `${ROUTE_PATH.Products}?category=${slug}` : ROUTE_PATH.Products);
+    props.onCategorySelect?.(slug);
   }, [navigate, props.onCategorySelect]);
 
   return (

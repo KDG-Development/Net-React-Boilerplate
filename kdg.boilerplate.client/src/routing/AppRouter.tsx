@@ -15,7 +15,7 @@ export const ROUTE_PATH = {
   NOT_FOUND: '*',
   LOGIN: '/login',
   Home: '/',
-  Products: `${ROUTE_BASE.Products}/*`,
+  Products: ROUTE_BASE.Products,
   Favorites: '/favorites',
   MyAccount: '/my-account',
 } as const;

@@ -35,20 +35,26 @@ public class CategoryService : ICategoryService
         {
             Id = category.Id,
             Name = category.Name,
-            FullPath = category.FullPath,
+            Slug = GetSlug(category.FullPath),
             Breadcrumbs = ancestors.Select(a => new CategoryBreadcrumb
             {
                 Id = a.Id,
                 Name = a.Name,
-                FullPath = a.FullPath
+                Slug = GetSlug(a.FullPath)
             }).ToList(),
             Subcategories = children.Select(c => new SubcategoryInfo
             {
                 Id = c.Id,
                 Name = c.Name,
-                FullPath = c.FullPath
+                Slug = GetSlug(c.FullPath)
             }).ToList()
         };
+    }
+
+    private static string GetSlug(string fullPath)
+    {
+        var lastSlash = fullPath.LastIndexOf('/');
+        return lastSlash >= 0 ? fullPath[(lastSlash + 1)..] : fullPath;
     }
 
     private static Dictionary<string, CategoryNode> BuildCategoryTree(List<Category> categories)
@@ -74,7 +80,7 @@ public class CategoryService : ICategoryService
         var node = new CategoryNode 
         { 
             Label = category.Name,
-            FullPath = category.FullPath
+            Slug = GetSlug(category.FullPath)
         };
 
         if (childrenByParent.TryGetValue(category.Id, out var children) && children.Count > 0)
