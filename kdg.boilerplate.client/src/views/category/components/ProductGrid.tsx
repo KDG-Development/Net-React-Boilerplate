@@ -1,8 +1,9 @@
-import { Card, Col, Image, Loader, Row } from "kdg-react";
+import { Card, Col, Image, Row } from "kdg-react";
 import { TProduct } from "../../../types/product/product";
 import { PaginatedResponse } from "../../../types/common/pagination";
 import { formatCurrency } from "../../../util/format";
 import { Pagination } from "./Pagination";
+import { ProductGridSkeleton } from "./ProductGridSkeleton";
 import placeholderImage from "../../../assets/images/logo.png";
 
 type ProductGridProps = {
@@ -40,7 +41,7 @@ const ProductCard = (props: { product: TProduct }) => (
 
 export const ProductGrid = (props: ProductGridProps) => {
   if (props.loading) {
-    return <Loader />;
+    return <ProductGridSkeleton />;
   }
 
   if (!props.data || props.data.items.length === 0) {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Col, Row, Loader } from "kdg-react";
+import { Col, Row } from "kdg-react";
 import { BaseTemplate } from "../_common/templates/BaseTemplate";
 import { getCategoryByPath, getCategoryProducts } from "../../api/categories";
 import { TProduct } from "../../types/product/product";
@@ -8,6 +8,7 @@ import { PaginatedResponse } from "../../types/common/pagination";
 import { usePagination } from "../../hooks/usePagination";
 import { SubcategoryNav } from "./components/SubcategoryNav";
 import { ProductGrid } from "./components/ProductGrid";
+import { CategoryPageSkeleton } from "./components/CategoryPageSkeleton";
 import { ROUTE_BASE } from "../../routing/AppRouter";
 import { CategoryDetail } from "../../types/category/category";
 
@@ -74,9 +75,7 @@ export const CategoryPage = () => {
   if (loading) {
     return (
       <BaseTemplate>
-        <div className="d-flex justify-content-center py-5">
-          <Loader />
-        </div>
+        <CategoryPageSkeleton />
       </BaseTemplate>
     );
   }

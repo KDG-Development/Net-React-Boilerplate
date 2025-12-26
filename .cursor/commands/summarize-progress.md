@@ -6,7 +6,7 @@ In the context of the work that has been completed:
 - Provide each section as a plaintext ```code snippet``` for easy copy+paste
 - Maximum 2 hours per section, rounded to nearest 6th minute (6 min increments)
 - Time formatted as Hours:Minutes (e.g., 2:00, 1:42, 0:30) provided on its own line above its corresponding group
-- Sections less than 2:00 do not need to be split up
+- Sections less than 2:00 shouldn't be split
 - Don't assume! Prompt the user for total time spent in order to accurately break up timelog entries
 - Don't make anything up
 
