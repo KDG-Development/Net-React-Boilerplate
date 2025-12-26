@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Clickable, Icon, Loader } from "kdg-react";
 
-// Recursive category type with dictionary children for O(1) lookups
 export type CategoryNode = {
   label: string;
   slug: string;
@@ -15,17 +14,57 @@ type MegaMenuProps = {
   categories: CategoryTree | null;
   loading?: boolean;
   onSelect?: (slug: string) => void;
+  variant?: "desktop" | "mobile";
 };
 
-type MegaMenuPanelProps = {
+// Mobile: recursive accordion item
+type MobileItemProps = {
+  item: CategoryNode;
+  onSelect: (slug: string) => void;
+  depth?: number;
+};
+
+const MobileItem = (props: MobileItemProps) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const hasChildren = props.item.children && Object.keys(props.item.children).length > 0;
+  const depth = props.depth ?? 0;
+
+  return (
+    <div>
+      <div className="d-flex align-items-center" style={{ paddingLeft: depth * 16 }}>
+        <Clickable onClick={() => props.onSelect(props.item.slug)} className="d-inline-block py-2">
+          {props.item.label}
+        </Clickable>
+        {hasChildren && (
+          <Clickable onClick={() => setIsExpanded(!isExpanded)} className="ms-auto">
+            <Icon
+              className='border'
+              icon={(x) => (isExpanded ? x.cilMinus : x.cilPlus)} size="sm"
+            />
+          </Clickable>
+        )}
+      </div>
+      {isExpanded && hasChildren && (
+        <div className="ms-3 ps-3 border-start">
+          {Object.entries(props.item.children!).map(([id, child]) => (
+            <MobileItem key={id} item={child} onSelect={props.onSelect} depth={depth + 1} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Desktop: horizontal panel
+type PanelProps = {
   items: CategoryTree;
   selectedId: string | null;
   onHover: (id: string) => void;
-  onClick: (id: string, item: CategoryNode) => void;
+  onClick: (item: CategoryNode) => void;
   isLast: boolean;
 };
 
-const MegaMenuPanel = (props: MegaMenuPanelProps) => {
+const Panel = (props: PanelProps) => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   return (
@@ -36,10 +75,9 @@ const MegaMenuPanel = (props: MegaMenuPanelProps) => {
       {Object.entries(props.items).map(([id, item]) => (
         <Clickable
           key={id}
-          onClick={() => props.onClick(id, item)}
+          onClick={() => props.onClick(item)}
           className={`d-block w-100 text-start ${
-            props.selectedId === id ? "bg-secondary bg-opacity-25" : 
-            hoveredId === id ? "bg-light" : ""
+            props.selectedId === id ? "bg-secondary bg-opacity-25" : hoveredId === id ? "bg-light" : ""
           }`}
         >
           <div
@@ -65,68 +103,44 @@ export const MegaMenu = (props: MegaMenuProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedPath, setSelectedPath] = useState<string[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
+  const isMobile = props.variant === "mobile";
 
-  // Close menu when clicking outside
+  // Close on outside click or escape (desktop only)
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-        setSelectedPath([]);
-      }
-    };
+    if (isMobile || !isOpen) return;
 
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isOpen]);
-
-  // Close on Escape key
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsOpen(false);
-        setSelectedPath([]);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener("keydown", handleEscape);
-    }
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [isOpen]);
-
-  const handleToggle = () => {
-    setIsOpen(!isOpen);
-    if (isOpen) {
+    const handleClose = (e: MouseEvent | KeyboardEvent) => {
+      if (e instanceof KeyboardEvent && e.key !== "Escape") return;
+      if (e instanceof MouseEvent && containerRef.current?.contains(e.target as Node)) return;
+      setIsOpen(false);
       setSelectedPath([]);
-    }
-  };
+    };
 
-  const handleHover = useCallback(
-    (depth: number, id: string) => {
-      setSelectedPath([...selectedPath.slice(0, depth), id]);
-    },
-    [selectedPath]
-  );
+    document.addEventListener("mousedown", handleClose);
+    document.addEventListener("keydown", handleClose);
+    return () => {
+      document.removeEventListener("mousedown", handleClose);
+      document.removeEventListener("keydown", handleClose);
+    };
+  }, [isOpen, isMobile]);
 
-  const handleClick = useCallback(
-    (_depth: number, _id: string, item: CategoryNode) => {
-      props.onSelect?.(item.slug);
+  const handleSelect = useCallback(
+    (slug: string) => {
+      props.onSelect?.(slug);
       setIsOpen(false);
       setSelectedPath([]);
     },
     [props.onSelect]
   );
 
-  // Build panels by traversing the selected path
+  const handleHover = useCallback(
+    (depth: number, id: string) => {
+      setSelectedPath((prev) => [...prev.slice(0, depth), id]);
+    },
+    []
+  );
+
+  // Build panels for desktop by traversing selectedPath
   const panels = props.categories
     ? selectedPath.reduce(
         (acc, id, i) => {
@@ -138,44 +152,68 @@ export const MegaMenu = (props: MegaMenuProps) => {
           return acc;
         },
         {
-          panels: [{ items: props.categories, selectedId: selectedPath[0] ?? null }] as { items: CategoryTree; selectedId: string | null }[],
+          panels: [{ items: props.categories, selectedId: selectedPath[0] ?? null }] as {
+            items: CategoryTree;
+            selectedId: string | null;
+          }[],
           current: props.categories,
         }
       ).panels
     : [];
 
+  const content =
+    props.loading || !props.categories ? (
+      <div className={isMobile ? "py-3" : "p-4 d-flex justify-content-center"}>
+        <Loader />
+      </div>
+    ) : isMobile ? (
+      Object.entries(props.categories).map(([id, item]) => (
+        <MobileItem key={id} item={item} onSelect={handleSelect} />
+      ))
+    ) : (
+      <div className="d-flex">
+        {panels.map((panel, depth) => (
+          <Panel
+            key={depth}
+            items={panel.items}
+            selectedId={panel.selectedId}
+            onHover={(id) => handleHover(depth, id)}
+            onClick={(item) => handleSelect(item.slug)}
+            isLast={depth === panels.length - 1}
+          />
+        ))}
+      </div>
+    );
+
   return (
-    <div className="position-relative d-inline-block" ref={containerRef}>
-      <Clickable onClick={handleToggle} className="py-2">
+    <div ref={containerRef} className={isMobile ? "" : "position-relative d-inline-block"}>
+      <Clickable
+        onClick={() => {
+          setIsOpen(!isOpen);
+          if (isOpen) setSelectedPath([]);
+        }}
+        className="py-2"
+      >
         <div className="d-flex align-items-center">
           {props.trigger}
-          <Icon icon={(x) => x.cilChevronBottom} size="sm" className="ms-1" />
+          <Icon
+            icon={(x) => (isMobile ? (isOpen ? x.cilChevronBottom : x.cilChevronRight) : x.cilChevronBottom)}
+            size="sm"
+            className="ms-1"
+          />
         </div>
       </Clickable>
 
       {isOpen && (
         <div
-          className="position-absolute start-0 bg-white border rounded shadow"
-          style={{ top: "100%", zIndex: 1000, minWidth: 200 }}
+          className={
+            isMobile
+              ? "ps-3 border-start ms-2"
+              : "position-absolute start-0 bg-white border rounded shadow"
+          }
+          style={isMobile ? undefined : { top: "100%", zIndex: 1000, minWidth: 200 }}
         >
-          {props.loading || !props.categories ? (
-            <div className="p-4 d-flex justify-content-center">
-              <Loader />
-            </div>
-          ) : (
-            <div className="d-flex">
-              {panels.map((panel, depth) => (
-                <MegaMenuPanel
-                  key={depth}
-                  items={panel.items}
-                  selectedId={panel.selectedId}
-                  onHover={(id) => handleHover(depth, id)}
-                  onClick={(id, item) => handleClick(depth, id, item)}
-                  isLast={depth === panels.length - 1}
-                />
-              ))}
-            </div>
-          )}
+          {content}
         </div>
       )}
     </div>

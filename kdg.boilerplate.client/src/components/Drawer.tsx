@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { Icon } from "kdg-react";
 
 type DrawerProps = {
   isOpen: boolean;
@@ -6,24 +7,27 @@ type DrawerProps = {
   header?: () => ReactNode;
   children: ReactNode;
   footer?: () => ReactNode;
+  position?: "start" | "end";
+  width?: string;
 };
 
 export const Drawer = (props: DrawerProps) => {
+  const position = props.position ?? "end";
   return (
     <>
       <div
-        className={`offcanvas offcanvas-end ${props.isOpen ? "show" : ""}`}
+        className={`offcanvas offcanvas-${position} ${props.isOpen ? "show" : ""}`}
+        style={props.width ? { width: props.width } : undefined}
         tabIndex={-1}
         aria-modal="true"
         role="dialog"
       >
         <div className="offcanvas-header border-bottom">
           {props.header && props.header()}
-          <button
-            type="button"
-            className="btn-close"
-            aria-label="Close"
+          <Icon
+            icon={(x) => x.cilX}
             onClick={props.onClose}
+            className="cursor-pointer"
           />
         </div>
         <div className="offcanvas-body overflow-auto">{props.children}</div>

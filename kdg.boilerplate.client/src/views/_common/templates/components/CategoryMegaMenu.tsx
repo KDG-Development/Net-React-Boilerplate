@@ -6,6 +6,7 @@ import { ROUTE_PATH } from "../../../../routing/AppRouter";
 
 type CategoryMegaMenuProps = {
   onCategorySelect?: (slug: string) => void;
+  variant?: "desktop" | "mobile";
 };
 
 export const CategoryMegaMenu = (props: CategoryMegaMenuProps) => {
@@ -41,6 +42,7 @@ export const CategoryMegaMenu = (props: CategoryMegaMenuProps) => {
       categories={categoriesWithAllProducts}
       loading={loading}
       onSelect={handleSelect}
+      variant={props.variant}
     />
   );
 };
