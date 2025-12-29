@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from "rea
 import { TProduct } from "../types/product/product";
 import { TCartItem } from "../types/template/cart";
 import { getCart, replaceCart, TCartItemRequest } from "../api/cart";
+import { useAuthContext } from "./AuthContext";
 
 type TCartContext = {
   cartItems: TCartItem[];
@@ -30,6 +31,8 @@ export const CartContextProvider = (props: TProviderProps) => {
   const [cartItems, setCartItems] = useState<TCartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const {user} = useAuthContext()
+
   const persistCart = useCallback((newItems: TCartItemRequest[]) => {
     replaceCart({
       items: newItems,
@@ -38,6 +41,10 @@ export const CartContextProvider = (props: TProviderProps) => {
   }, []);
 
   useEffect(() => {
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
     getCart({
       success: (items) => {
         setCartItems(items);
@@ -47,7 +54,7 @@ export const CartContextProvider = (props: TProviderProps) => {
         setIsLoading(false);
       },
     });
-  }, []);
+  }, [user]);
 
   const addItem = (product: TProduct, quantity: number = 1) => {
     const existingItem = cartItems.find((item) => item.id === product.id);
