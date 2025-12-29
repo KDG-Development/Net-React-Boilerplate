@@ -60,13 +60,24 @@ export const ProductGrid = (props: ProductGridProps) => {
           entity={props.data}
           render={data => (
             <>
-              <Row>
-                {data.items.map(product => (
-                  <Col key={product.id} xs={12} sm={6} md={6} lg={4} className="mb-4">
-                    <ProductCard product={product} />
-                  </Col>
-                ))}
-              </Row>
+              <Conditional
+                condition={!!data.items.length}
+                onTrue={() => (
+                  <Row>
+                    {data.items.map(product => (
+                      <Col key={product.id} xs={12} sm={6} md={6} lg={4} className="mb-4">
+                        <ProductCard product={product} />
+                      </Col>
+                    ))}
+                  </Row>
+                )}
+                onFalse={() => (
+                  <div className="text-center">
+                    <h4>No products found</h4>
+                    <p>Try adjusting your search or filter settings.</p>
+                  </div>
+                )}
+              />
               
               <Conditional
                 condition={data.totalPages > 1}
@@ -79,12 +90,6 @@ export const ProductGrid = (props: ProductGridProps) => {
                     />
                   </div>
                 )}
-                onFalse={() =>
-                  <div className="text-center">
-                    <h4>No products found</h4>
-                    <p>Try adjusting your search or filter settings.</p>
-                  </div>
-                }
               />
             </>
           )}

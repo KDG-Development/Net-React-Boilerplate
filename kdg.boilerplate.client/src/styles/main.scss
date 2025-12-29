@@ -1,8 +1,11 @@
-// Variables
-@use 'variables';
+// Custom variables (must come before CoreUI to override !default values)
+@import 'variables';
 
-// Components
-@use 'components/skeleton';
-@use 'components/product-grid';
-@use 'components/micro-toast';
+// CoreUI Pro SCSS source
+@import '@coreui/coreui-pro/scss/coreui';
+
+// Custom Components
+@import 'components/skeleton';
+@import 'components/product-grid';
+@import 'components/micro-toast';
 
