@@ -36,6 +36,7 @@ var categoryCount = 10;
 var productCount = 50;
 var seedCategories = false;
 var seedProducts = false;
+var seedUser = false;
 
 for (var i = 1; i < args.Length; i++)
 {
@@ -61,6 +62,9 @@ for (var i = 1; i < args.Length; i++)
                 i++;
             }
             break;
+        case "--user":
+            seedUser = true;
+            break;
         default:
             Console.Error.WriteLine($"Unknown argument: {args[i]}");
             PrintUsage();
@@ -68,9 +72,9 @@ for (var i = 1; i < args.Length; i++)
     }
 }
 
-if (!seedCategories && !seedProducts)
+if (!seedCategories && !seedProducts && !seedUser)
 {
-    Console.Error.WriteLine("No seeders specified. Use --all, --categories, or --products.");
+    Console.Error.WriteLine("No seeders specified. Use --all, --categories, --products, or --user.");
     PrintUsage();
     return 1;
 }
@@ -102,6 +106,13 @@ try
         Console.WriteLine();
     }
 
+    if (seedUser)
+    {
+        var userSeeder = new UserSeeder(database);
+        await userSeeder.SeedAsync();
+        Console.WriteLine();
+    }
+
     Console.WriteLine("Seeding completed successfully!");
     return 0;
 }
@@ -118,17 +129,19 @@ void PrintUsage()
 KDG DevTools - Data Seeder
 
 Usage:
-  dotnet run --project KDG.DevTools seed [options]
+  docker compose run --rm devtools seed [options]
 
 Options:
   --all                 Seed all data types with default counts
   --categories [count]  Seed categories (default: 10)
   --products [count]    Seed products (default: 50)
+  --user                Seed a user (interactive prompts)
 
 Examples:
   docker compose run --rm devtools seed --all
   docker compose run --rm devtools seed --categories 20 --products 100
   docker compose run --rm devtools seed --categories
+  docker compose run --rm devtools seed --user
 ");
 }
 

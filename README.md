@@ -39,6 +39,9 @@ docker compose run --rm devtools seed --categories 20 --products 100
 # Seed only categories or products
 docker compose run --rm devtools seed --categories
 docker compose run --rm devtools seed --products 25
+
+# Seed a user (interactive prompts for email, password, and permission group)
+docker compose run --rm devtools seed --user
 ```
 
 > **Note**: This tool only runs in Development environment. It will refuse to execute in QA/Production.

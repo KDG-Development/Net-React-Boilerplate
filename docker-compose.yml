@@ -149,10 +149,13 @@ services:
         - BUILD_CONFIGURATION=Development
     volumes:
       - ./KDG.DevTools:/src/KDG.DevTools
+      - ./KDG.Boilerplate.Server:/src/KDG.Boilerplate.Server
       - ./appsettings.Development.json:/src/appsettings.json:ro
       # Prevent sync of build artifacts
       - /src/KDG.DevTools/bin/
       - /src/KDG.DevTools/obj/
+      - /src/KDG.Boilerplate.Server/bin/
+      - /src/KDG.Boilerplate.Server/obj/
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
     working_dir: /src
