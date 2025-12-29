@@ -1,6 +1,7 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { TProduct } from "../types/product/product";
 import { TCartItem } from "../types/template/cart";
+import { getCart, replaceCart, TCartItemRequest } from "../api/cart";
 
 type TCartContext = {
   cartItems: TCartItem[];
@@ -10,6 +11,7 @@ type TCartContext = {
   clearCart: () => void;
   subtotal: number;
   itemCount: number;
+  isLoading: boolean;
 };
 
 const CartContext = createContext<TCartContext | undefined>(undefined);
@@ -18,39 +20,66 @@ type TProviderProps = {
   children: React.ReactNode;
 };
 
+const toCartItemRequests = (items: TCartItem[]): TCartItemRequest[] =>
+  items.map((item) => ({
+    productId: item.id,
+    quantity: item.quantity,
+  }));
+
 export const CartContextProvider = (props: TProviderProps) => {
   const [cartItems, setCartItems] = useState<TCartItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const persistCart = useCallback((newItems: TCartItemRequest[]) => {
+    replaceCart({
+      items: newItems,
+      success: setCartItems,
+    });
+  }, []);
+
+  useEffect(() => {
+    getCart({
+      success: (items) => {
+        setCartItems(items);
+        setIsLoading(false);
+      },
+      errorHandler: () => {
+        setIsLoading(false);
+      },
+    });
+  }, []);
 
   const addItem = (product: TProduct, quantity: number = 1) => {
-    setCartItems((items) => {
-      const existingItem = items.find((item) => item.id === product.id);
-      if (existingItem) {
-        return items.map((item) =>
+    const existingItem = cartItems.find((item) => item.id === product.id);
+    const newItems = existingItem
+      ? cartItems.map((item) =>
           item.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        );
-      }
-      return [...items, { ...product, quantity }];
-    });
+            ? { productId: item.id, quantity: item.quantity + quantity }
+            : { productId: item.id, quantity: item.quantity }
+        )
+      : [...toCartItemRequests(cartItems), { productId: product.id, quantity }];
+    persistCart(newItems);
   };
 
   const updateQuantity = (id: string, delta: number) => {
-    setCartItems((items) =>
-      items
-        .map((item) =>
-          item.id === id ? { ...item, quantity: item.quantity + delta } : item
-        )
-        .filter((item) => item.quantity > 0)
-    );
+    const newItems = cartItems
+      .map((item) => ({
+        productId: item.id,
+        quantity: item.id === id ? item.quantity + delta : item.quantity,
+      }))
+      .filter((item) => item.quantity > 0);
+    persistCart(newItems);
   };
 
   const removeItem = (id: string) => {
-    setCartItems((items) => items.filter((item) => item.id !== id));
+    const newItems = cartItems
+      .filter((item) => item.id !== id)
+      .map((item) => ({ productId: item.id, quantity: item.quantity }));
+    persistCart(newItems);
   };
 
   const clearCart = () => {
-    setCartItems([]);
+    persistCart([]);
   };
 
   const subtotal = cartItems.reduce(
@@ -70,6 +99,7 @@ export const CartContextProvider = (props: TProviderProps) => {
         clearCart,
         subtotal,
         itemCount,
+        isLoading,
       }}
     >
       {props.children}
@@ -84,4 +114,3 @@ export const useCartContext = () => {
 
   return cartContext;
 };
-

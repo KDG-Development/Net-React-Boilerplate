@@ -52,7 +52,7 @@ export const CartWidget = () => {
       <div className="d-flex flex-column gap-3">
         {cartItems.map((item) => (
           <div key={item.id} className="d-flex gap-3 border-bottom pb-3">
-            <Image src={item.image} width={80} height={80} className="rounded" />
+            <Image src={item.image?.src ?? ""} width={80} height={80} className="rounded" />
             <div className="flex-grow-1">
               <h6 className="mb-1">{item.name}</h6>
               <div className="d-flex align-items-center gap-2 my-1">

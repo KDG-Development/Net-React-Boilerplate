@@ -13,6 +13,8 @@ public interface IProductRepository
         Guid? categoryId = null,
         ProductFilterParams? filters = null);
     Task<Product?> GetByIdAsync(Guid id);
+    Task<List<Product>> GetByIdsAsync(Guid[] ids);
+    Task<List<ProductMeta>> GetMetaByIdsAsync(Guid[] ids);
 }
 
 public class ProductRepository : IProductRepository
@@ -132,6 +134,15 @@ public class ProductRepository : IProductRepository
 
     public async Task<Product?> GetByIdAsync(Guid id)
     {
+        var products = await GetByIdsAsync([id]);
+        return products.FirstOrDefault();
+    }
+
+    public async Task<List<Product>> GetByIdsAsync(Guid[] ids)
+    {
+        if (ids.Length == 0)
+            return [];
+
         return await _database.WithConnection(async connection =>
         {
             var sql = @"
@@ -142,23 +153,71 @@ public class ProductRepository : IProductRepository
                     p.description, 
                     p.price
                 FROM products p
-                WHERE p.id = @Id";
+                WHERE p.id = ANY(@Ids)";
 
-            var product = await connection.QueryFirstOrDefaultAsync<Product>(sql, new { Id = id });
+            var products = (await connection.QueryAsync<Product>(sql, new { Ids = ids })).ToList();
 
-            if (product != null)
+            if (products.Count > 0)
             {
+                var productIds = products.Select(p => p.Id).ToArray();
                 var images = await connection.QueryAsync<ProductImage>(
                     @"SELECT id, product_id AS ProductId, src, sort_order AS SortOrder
                       FROM product_images
-                      WHERE product_id = @ProductId
+                      WHERE product_id = ANY(@ProductIds)
                       ORDER BY sort_order",
-                    new { ProductId = id }
+                    new { ProductIds = productIds }
                 );
-                product.Images = images.ToList();
+
+                var imagesByProduct = images.ToLookup(i => i.ProductId);
+                foreach (var product in products)
+                {
+                    product.Images = imagesByProduct[product.Id].ToList();
+                }
             }
 
-            return product;
+            return products;
+        });
+    }
+
+    public async Task<List<ProductMeta>> GetMetaByIdsAsync(Guid[] ids)
+    {
+        if (ids.Length == 0)
+            return [];
+
+        return await _database.WithConnection(async connection =>
+        {
+            var sql = @"
+                SELECT 
+                    p.id, 
+                    p.name, 
+                    p.description, 
+                    p.price
+                FROM products p
+                WHERE p.id = ANY(@Ids)";
+
+            var products = (await connection.QueryAsync<ProductMeta>(sql, new { Ids = ids })).ToList();
+
+            if (products.Count > 0)
+            {
+                var productIds = products.Select(p => p.Id).ToArray();
+                var images = await connection.QueryAsync<ProductImage>(
+                    @"SELECT DISTINCT ON (product_id) 
+                        id, product_id AS ProductId, src, sort_order AS SortOrder
+                      FROM product_images
+                      WHERE product_id = ANY(@ProductIds)
+                      ORDER BY product_id, sort_order",
+                    new { ProductIds = productIds }
+                );
+
+                var imageByProduct = images.ToDictionary(i => i.ProductId);
+                foreach (var product in products)
+                {
+                    if (imageByProduct.TryGetValue(product.Id, out var image))
+                        product.Image = image;
+                }
+            }
+
+            return products;
         });
     }
 

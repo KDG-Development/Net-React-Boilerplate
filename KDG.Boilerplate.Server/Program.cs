@@ -34,6 +34,8 @@ builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<ICartRepository, CartRepository>();
+builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IAuthService>(provider => new AuthService(
     builder.Configuration["Jwt:Key"] ?? throw new Exception("JWT Key not configured"),
     builder.Configuration["Jwt:Issuer"] ?? throw new Exception("JWT Issuer not configured"), 

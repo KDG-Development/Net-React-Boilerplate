@@ -13,6 +13,14 @@ export type TProduct = {
   price: number;
 };
 
+export type TProductMeta = {
+  id: string;
+  name: string;
+  image: TProductImage | null;
+  description: string | null;
+  price: number;
+};
+
 export type TProductBreadcrumb = {
   id: string;
   name: string;

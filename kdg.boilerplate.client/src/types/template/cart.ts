@@ -1,6 +1,5 @@
-import { TProduct } from "../product/product";
+import { TProductMeta } from "../product/product";
 
-export type TCartItem = TProduct & {
+export type TCartItem = TProductMeta & {
   quantity: number;
 };
-
