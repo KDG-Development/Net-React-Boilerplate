@@ -5,6 +5,7 @@ using KDG.UserManagement.Models;
 using Dapper;
 using KDG.Boilerplate.Server.Models.Users;
 using KDG.Boilerplate.Server.Models.ActiveRecords;
+using KDG.Boilerplate.Server.Models.Organizations;
 
 namespace KDG.Boilerplate.Services;
 
@@ -51,9 +52,12 @@ public class UserRepository : IUserRepository {
                 select
                     u.id,
                     u.email,
+                    u.organization_id,
+                    o.name as organization_name,
                     coalesce(array_agg(distinct upg.permission_group) filter (where upg.permission_group is not null), ARRAY[]::text[]) as permission_groups,
                     coalesce(array_agg(distinct p.permission) filter (where p.permission is not null), ARRAY[]::text[]) as permissions
                 from users u
+                left join organizations o on o.id = u.organization_id
                 left join user_permission_groups upg on upg.user_id = u.id
                 left join permission_group_permissions pgp on pgp.permission_group = upg.permission_group
                 left join user_permissions up on up.user_id = u.id
@@ -61,7 +65,7 @@ public class UserRepository : IUserRepository {
                     p.permission = up.permission
                     or p.permission = pgp.permission
                 where u.email = @Email
-                group by u.id";
+                group by u.id, o.name";
 
             var result = await connection.QueryFirstOrDefaultAsync<UserActiveRecord>(sql, new { authPayload.Email });
             
@@ -70,6 +74,9 @@ public class UserRepository : IUserRepository {
             return new User {
                 Id = result.Id,
                 Email = result.Email,
+                Organization = result.OrganizationId.HasValue
+                    ? new OrganizationMeta { Id = result.OrganizationId.Value, Name = result.OrganizationName ?? string.Empty }
+                    : null,
                 PermissionGroups =
                     new HashSet<PermissionGroupBase>(
                         (result.PermissionGroups ?? []).Select(group => new PermissionGroupBase(group))
