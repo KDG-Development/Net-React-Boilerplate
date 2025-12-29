@@ -115,8 +115,8 @@ export const CategoryPage = () => {
                 <Col md={12}>
                   <div className="text-center py-5">
                     <h4 className="text-muted">{error || 'Category not found'}</h4>
-                    <Link to="/" className="btn btn-primary mt-3">
-                      Return Home
+                    <Link to={ROUTE_PATH.Products} className="btn btn-primary mt-3">
+                      Browse Products
                     </Link>
                   </div>
                 </Col>

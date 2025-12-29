@@ -67,14 +67,25 @@ export const ProductGrid = (props: ProductGridProps) => {
                   </Col>
                 ))}
               </Row>
-    
-              <div className="mt-4">
-                <Pagination
-                  currentPage={data.page}
-                  totalPages={data.totalPages}
-                  onPageChange={props.onPageChange}
-                />
-              </div>
+              
+              <Conditional
+                condition={data.totalPages > 1}
+                onTrue={() => (
+                  <div className="mt-4">
+                    <Pagination
+                      currentPage={data.page}
+                      totalPages={data.totalPages}
+                      onPageChange={props.onPageChange}
+                    />
+                  </div>
+                )}
+                onFalse={() =>
+                  <div className="text-center">
+                    <h4>No products found</h4>
+                    <p>Try adjusting your search or filter settings.</p>
+                  </div>
+                }
+              />
             </>
           )}
         />
