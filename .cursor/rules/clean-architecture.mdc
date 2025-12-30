@@ -1,0 +1,15 @@
+---
+description: Standards for following CLEAN architecture
+globs: *.cs
+---
+- organize code into layers: Domain (entities/value objects), Application (use cases/services), Infrastructure (data access/external APIs), Presentation (controllers)
+- dependencies flow inward: outer layers depend on inner layers, never the reverse
+- domain layer has no external dependencies - only pure C# types
+- define interfaces in inner layers, implement in outer layers
+- controllers should only orchestrate - delegate business logic to services
+- services contain business logic and coordinate domain entities
+- keep entities behavior-rich, avoid anemic domain models
+- use DTOs at layer boundaries to prevent leaking internal structures
+- infrastructure concerns (database, HTTP, files) stay in Infrastructure layer
+- inject dependencies via constructor - no service locator patterns
+- one use case per service method - avoid god services
