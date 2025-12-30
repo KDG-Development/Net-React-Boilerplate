@@ -3,19 +3,20 @@ import { useParams, Link } from "react-router-dom";
 import { Col, Row, Conditional, EntityConditional, Image, Icon, Clickable, NumberInput, ActionButton, Enums } from "kdg-react";
 import { BaseTemplate } from "../_common/templates/BaseTemplate";
 import { getProductById } from "../../api/products";
-import { TProductDetail } from "../../types/product/product";
+import { TCatalogProductDetail } from "../../types/product/product";
 import { useCartContext } from "../../context/CartContext";
 import { formatCurrency } from "../../util/format";
 import { ROUTE_PATH } from "../../routing/AppRouter";
 import { ProductDetailSkeleton } from "./components/ProductDetailSkeleton";
 import { MicroToast } from "../../components/MicroToast";
+import { FavoriteToggle } from "../../components/FavoriteToggle/FavoriteToggle";
 import placeholderImage from "../../assets/images/logo.png";
 
 export const ProductDetailPage = () => {
   const { productId } = useParams<{ productId: string }>();
   const { addItem } = useCartContext();
 
-  const [product, setProduct] = useState<TProductDetail | null>(null);
+  const [product, setProduct] = useState<TCatalogProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -140,7 +141,15 @@ export const ProductDetailPage = () => {
 
                         {/* Product Info */}
                         <Col md={7}>
-                          <h1 className="h3 mb-3">{prod.name}</h1>
+                          <div className="d-flex align-items-start justify-content-between mb-3">
+                            <h1 className="h3 mb-0">{prod.name}</h1>
+                            <FavoriteToggle
+                              productId={prod.id}
+                              isFavorite={prod.isFavorite}
+                              className="p-2"
+                              size={36}
+                            />
+                          </div>
 
                           <Conditional
                             condition={!!prod.description}
@@ -198,6 +207,8 @@ export const ProductDetailPage = () => {
                                           description: prod.description,
                                           price: prod.price,
                                           images: prod.images,
+                                          isFavorite: prod.isFavorite,
+                                          categoryId: prod.categoryId,
                                         },
                                         quantity
                                       );

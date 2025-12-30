@@ -74,17 +74,26 @@ public class UserSeeder
             }
         }
 
+        // Prompt for organization name
+        Console.WriteLine();
+        Console.Write("Organization name (or empty to skip): ");
+        var organizationName = Console.ReadLine()?.Trim();
+
         Console.WriteLine();
         Console.WriteLine($"Creating user {email}...");
 
         try
         {
-            await CreateUser(email, password, selectedGroup);
+            await CreateUser(email, password, selectedGroup, organizationName);
 
             if (selectedGroup != null)
             {
                 var groupName = _availableGroups.First(g => g.Value == selectedGroup).Name;
                 Console.WriteLine($"Assigned group: {groupName}");
+            }
+            if (!string.IsNullOrWhiteSpace(organizationName))
+            {
+                Console.WriteLine($"Created organization: {organizationName}");
             }
             Console.WriteLine("User created successfully!");
         }
@@ -94,19 +103,29 @@ public class UserSeeder
         }
     }
 
-    private async Task CreateUser(string email, string password, string? permissionGroup)
+    private async Task CreateUser(string email, string password, string? permissionGroup, string? organizationName)
     {
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
         var salt = passwordHash.Substring(0, 29); // BCrypt salt is first 29 chars
 
         await _database.WithConnection(async conn =>
         {
-            // Upsert user
+            // Create organization if provided
+            Guid? organizationId = null;
+            if (!string.IsNullOrWhiteSpace(organizationName))
+            {
+                organizationId = await conn.QuerySingleAsync<Guid>(
+                    @"INSERT INTO organizations (name) VALUES (@Name) RETURNING id",
+                    new { Name = organizationName }
+                );
+            }
+
+            // Upsert user with organization
             var userId = await conn.QuerySingleAsync<Guid>(
-                @"INSERT INTO users (email) VALUES (@Email)
-                  ON CONFLICT (email) DO UPDATE SET email = excluded.email
+                @"INSERT INTO users (email, organization_id) VALUES (@Email, @OrganizationId)
+                  ON CONFLICT (email) DO UPDATE SET email = excluded.email, organization_id = @OrganizationId
                   RETURNING id",
-                new { Email = email }
+                new { Email = email, OrganizationId = organizationId }
             );
 
             // Deactivate existing passwords and insert new one

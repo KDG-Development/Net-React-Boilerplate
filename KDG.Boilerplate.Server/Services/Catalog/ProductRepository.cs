@@ -7,13 +7,13 @@ namespace KDG.Boilerplate.Services;
 
 public interface IProductRepository
 {
-    Task<(List<Product> Items, int TotalCount)> GetPaginatedAsync(
+    Task<(List<CatalogProductSummary> Items, int TotalCount)> GetCatalogProductsAsync(
         int offset, 
         int limit,
+        Guid userId,
         Guid? categoryId = null,
         ProductFilterParams? filters = null);
-    Task<Product?> GetByIdAsync(Guid id);
-    Task<List<Product>> GetByIdsAsync(Guid[] ids);
+    Task<(Product Product, bool IsFavorite)?> GetCatalogProductByIdAsync(Guid id, Guid userId);
     Task<List<ProductMeta>> GetMetaByIdsAsync(Guid[] ids);
 }
 
@@ -26,9 +26,10 @@ public class ProductRepository : IProductRepository
         _database = database;
     }
 
-    public async Task<(List<Product> Items, int TotalCount)> GetPaginatedAsync(
+    public async Task<(List<CatalogProductSummary> Items, int TotalCount)> GetCatalogProductsAsync(
         int offset, 
         int limit,
+        Guid userId,
         Guid? categoryId = null,
         ProductFilterParams? filters = null)
     {
@@ -43,6 +44,8 @@ public class ProductRepository : IProductRepository
             var searchQuery = filters?.GetSearchQuery();
             if (searchQuery != null)
                 conditions.Add("p.search_vector @@ to_tsquery('english', @SearchTerm)");
+            if (filters?.FavoritesOnly == true)
+                conditions.Add("of.product_id IS NOT NULL");
 
             string sql;
             if (categoryId.HasValue)
@@ -63,8 +66,11 @@ public class ProductRepository : IProductRepository
                         p.name, 
                         p.description, 
                         p.price,
+                        (of.product_id IS NOT NULL) AS IsFavorite,
                         COUNT(*) OVER() AS TotalCount
                     FROM products p
+                    LEFT JOIN users u ON u.id = @UserId
+                    LEFT JOIN organization_favorites of ON of.product_id = p.id AND of.organization_id = u.organization_id
                     WHERE {string.Join(" AND ", conditions)}
                     ORDER BY p.name
                     LIMIT @Limit OFFSET @Offset";
@@ -82,15 +88,19 @@ public class ProductRepository : IProductRepository
                         p.name, 
                         p.description, 
                         p.price,
+                        (of.product_id IS NOT NULL) AS IsFavorite,
                         COUNT(*) OVER() AS TotalCount
                     FROM products p
+                    LEFT JOIN users u ON u.id = @UserId
+                    LEFT JOIN organization_favorites of ON of.product_id = p.id AND of.organization_id = u.organization_id
                     {whereClause}
                     ORDER BY p.name
                     LIMIT @Limit OFFSET @Offset";
             }
 
-            var results = (await connection.QueryAsync<ProductWithCount>(sql, new { 
+            var results = (await connection.QueryAsync<ProductListItemRecord>(sql, new { 
                 CategoryId = categoryId, 
+                UserId = userId,
                 Limit = limit, 
                 Offset = offset,
                 MinPrice = filters?.MinPrice,
@@ -99,13 +109,14 @@ public class ProductRepository : IProductRepository
             })).ToList();
             
             var totalCount = results.FirstOrDefault()?.TotalCount ?? 0;
-            var products = results.Select(r => new Product
+            var products = results.Select(r => new CatalogProductSummary
             {
                 Id = r.Id,
                 CategoryId = r.CategoryId,
                 Name = r.Name,
                 Description = r.Description,
-                Price = r.Price
+                Price = r.Price,
+                IsFavorite = r.IsFavorite
             }).ToList();
 
             // Fetch images for all products in a single query
@@ -132,17 +143,8 @@ public class ProductRepository : IProductRepository
         });
     }
 
-    public async Task<Product?> GetByIdAsync(Guid id)
+    public async Task<(Product Product, bool IsFavorite)?> GetCatalogProductByIdAsync(Guid id, Guid userId)
     {
-        var products = await GetByIdsAsync([id]);
-        return products.FirstOrDefault();
-    }
-
-    public async Task<List<Product>> GetByIdsAsync(Guid[] ids)
-    {
-        if (ids.Length == 0)
-            return [];
-
         return await _database.WithConnection(async connection =>
         {
             var sql = @"
@@ -151,31 +153,38 @@ public class ProductRepository : IProductRepository
                     p.category_id AS CategoryId, 
                     p.name, 
                     p.description, 
-                    p.price
+                    p.price,
+                    (of.product_id IS NOT NULL) AS IsFavorite
                 FROM products p
-                WHERE p.id = ANY(@Ids)";
+                LEFT JOIN users u ON u.id = @UserId
+                LEFT JOIN organization_favorites of ON of.product_id = p.id AND of.organization_id = u.organization_id
+                WHERE p.id = @Id";
 
-            var products = (await connection.QueryAsync<Product>(sql, new { Ids = ids })).ToList();
+            var result = await connection.QueryFirstOrDefaultAsync<ProductWithFavoriteRecord>(sql, new { Id = id, UserId = userId });
+            
+            if (result == null)
+                return ((Product, bool)?)null;
 
-            if (products.Count > 0)
+            var product = new Product
             {
-                var productIds = products.Select(p => p.Id).ToArray();
-                var images = await connection.QueryAsync<ProductImage>(
-                    @"SELECT id, product_id AS ProductId, src, sort_order AS SortOrder
-                      FROM product_images
-                      WHERE product_id = ANY(@ProductIds)
-                      ORDER BY sort_order",
-                    new { ProductIds = productIds }
-                );
+                Id = result.Id,
+                CategoryId = result.CategoryId,
+                Name = result.Name,
+                Description = result.Description,
+                Price = result.Price
+            };
 
-                var imagesByProduct = images.ToLookup(i => i.ProductId);
-                foreach (var product in products)
-                {
-                    product.Images = imagesByProduct[product.Id].ToList();
-                }
-            }
+            // Fetch images
+            var images = await connection.QueryAsync<ProductImage>(
+                @"SELECT id, product_id AS ProductId, src, sort_order AS SortOrder
+                  FROM product_images
+                  WHERE product_id = @ProductId
+                  ORDER BY sort_order",
+                new { ProductId = id }
+            );
+            product.Images = images.ToList();
 
-            return products;
+            return (product, result.IsFavorite);
         });
     }
 
@@ -221,13 +230,24 @@ public class ProductRepository : IProductRepository
         });
     }
 
-    private class ProductWithCount
+    private class ProductListItemRecord
     {
         public Guid Id { get; set; }
         public Guid? CategoryId { get; set; }
         public string Name { get; set; } = string.Empty;
         public string? Description { get; set; }
         public decimal Price { get; set; }
+        public bool IsFavorite { get; set; }
         public int TotalCount { get; set; }
+    }
+
+    private class ProductWithFavoriteRecord
+    {
+        public Guid Id { get; set; }
+        public Guid? CategoryId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public decimal Price { get; set; }
+        public bool IsFavorite { get; set; }
     }
 }

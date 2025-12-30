@@ -5,11 +5,12 @@ namespace KDG.Boilerplate.Services;
 
 public interface IProductService
 {
-    Task<PaginatedResponse<Product>> GetProductsAsync(
+    Task<PaginatedResponse<CatalogProductSummary>> GetCatalogProductsAsync(
+        Guid userId,
         PaginationParams pagination,
         Guid? categoryId = null,
         ProductFilterParams? filters = null);
-    Task<ProductDetailResponse?> GetProductByIdAsync(Guid id);
+    Task<CatalogProductDetail?> GetCatalogProductByIdAsync(Guid id, Guid userId);
 }
 
 public class ProductService : IProductService
@@ -23,26 +24,30 @@ public class ProductService : IProductService
         _categoryRepository = categoryRepository;
     }
 
-    public async Task<PaginatedResponse<Product>> GetProductsAsync(
+    public async Task<PaginatedResponse<CatalogProductSummary>> GetCatalogProductsAsync(
+        Guid userId,
         PaginationParams pagination,
         Guid? categoryId = null,
         ProductFilterParams? filters = null)
     {
-        var (products, totalCount) = await _productRepository.GetPaginatedAsync(
+        var (products, totalCount) = await _productRepository.GetCatalogProductsAsync(
             pagination.Offset, 
             pagination.PageSize,
+            userId,
             categoryId,
             filters
         );
 
-        return new PaginatedResponse<Product>(products, pagination.Page, pagination.PageSize, totalCount);
+        return new PaginatedResponse<CatalogProductSummary>(products, pagination.Page, pagination.PageSize, totalCount);
     }
 
-    public async Task<ProductDetailResponse?> GetProductByIdAsync(Guid id)
+    public async Task<CatalogProductDetail?> GetCatalogProductByIdAsync(Guid id, Guid userId)
     {
-        var product = await _productRepository.GetByIdAsync(id);
-        if (product == null)
+        var result = await _productRepository.GetCatalogProductByIdAsync(id, userId);
+        if (result == null)
             return null;
+
+        var (product, isFavorite) = result.Value;
 
         var breadcrumbs = new List<CategoryBreadcrumb>();
         if (product.CategoryId.HasValue)
@@ -56,6 +61,15 @@ public class ProductService : IProductService
             }).ToList();
         }
 
-        return new ProductDetailResponse(product, breadcrumbs);
+        return new CatalogProductDetail
+        {
+            Id = product.Id,
+            Name = product.Name,
+            Description = product.Description,
+            Price = product.Price,
+            Images = product.Images,
+            IsFavorite = isFavorite,
+            Breadcrumbs = breadcrumbs
+        };
     }
 }

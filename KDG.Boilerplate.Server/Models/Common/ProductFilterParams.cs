@@ -8,6 +8,7 @@ public class ProductFilterParams
     public const string MinPriceParam = "minPrice";
     public const string MaxPriceParam = "maxPrice";
     public const string SearchParam = "search";
+    public const string FavoritesOnlyParam = "favoritesOnly";
 
     [FromQuery(Name = MinPriceParam)]
     public decimal? MinPrice { get; set; }
@@ -17,6 +18,9 @@ public class ProductFilterParams
 
     [FromQuery(Name = SearchParam)]
     public string? Search { get; set; }
+
+    [FromQuery(Name = FavoritesOnlyParam)]
+    public bool FavoritesOnly { get; set; }
 
     public bool HasPriceFilter => MinPrice.HasValue || MaxPrice.HasValue;
     public bool HasSearchFilter => !string.IsNullOrWhiteSpace(Search);

@@ -52,10 +52,10 @@ public class UserRepository : IUserRepository {
                 select
                     u.id,
                     u.email,
-                    u.organization_id,
-                    o.name as organization_name,
-                    coalesce(array_agg(distinct upg.permission_group) filter (where upg.permission_group is not null), ARRAY[]::text[]) as permission_groups,
-                    coalesce(array_agg(distinct p.permission) filter (where p.permission is not null), ARRAY[]::text[]) as permissions
+                    u.organization_id AS OrganizationId,
+                    o.name AS OrganizationName,
+                    coalesce(array_agg(distinct upg.permission_group) filter (where upg.permission_group is not null), ARRAY[]::text[]) as PermissionGroups,
+                    coalesce(array_agg(distinct p.permission) filter (where p.permission is not null), ARRAY[]::text[]) as Permissions
                 from users u
                 left join organizations o on o.id = u.organization_id
                 left join user_permission_groups upg on upg.user_id = u.id
@@ -65,7 +65,7 @@ public class UserRepository : IUserRepository {
                     p.permission = up.permission
                     or p.permission = pgp.permission
                 where u.email = @Email
-                group by u.id, o.name";
+                group by u.id, u.organization_id, o.name";
 
             var result = await connection.QueryFirstOrDefaultAsync<UserActiveRecord>(sql, new { authPayload.Email });
             

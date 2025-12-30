@@ -1,32 +1,43 @@
 import { useState } from "react";
-import { Clickable, Icon, Image, Nav, Row, useAppNavigation } from "kdg-react";
+import { ActionButton, Clickable, Enums, Icon, Image, Nav, Row, TextInput, useAppNavigation } from "kdg-react";
 import { Link, useLocation } from "react-router-dom";
 import logo from "../../../../assets/images/logo.png";
 import { CategoryMegaMenu } from "./CategoryMegaMenu";
 import { CartWidget } from "./CartWidget";
 import { ROUTE_PATH } from "../../../../routing/AppRouter";
-import { useAuthContext } from "../../../../context/AuthContext";
+import { useUserContext } from "../../../../context/UserContext";
 import { getResetSearchParams } from "../../../../hooks/useProductFilters";
-import { ControlledSearchInput } from "../../components/ControlledSearchInput";
+import { FILTER_PARAM_KEYS } from "../../../../types/product/product";
 import { Drawer } from "../../../../components/Drawer";
+import { onEnterKey } from "../../../../util/keyboard";
 
 export const Header = () => {
-  const user = useAuthContext();
+  const { user, logout } = useUserContext();
   const navigate = useAppNavigation();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const handleHeaderSearch = (value: string | null) => {
-    const searchParams = getResetSearchParams(value);
-    const queryString = searchParams.toString();
-    navigate(`${ROUTE_PATH.Products}${queryString ? `?${queryString}` : ''}`);
-  };
 
   // Only show current search value when on products page
   const isOnProductsPage = location.pathname === ROUTE_PATH.Products;
   const currentSearch = isOnProductsPage 
     ? new URLSearchParams(location.search).get('search') 
     : null;
+
+  const [searchValue, setSearchValue] = useState<string | null>(currentSearch);
+  const [prevSearch, setPrevSearch] = useState<string | null>(currentSearch);
+
+  // Sync local state when URL search changes
+  if (currentSearch !== prevSearch) {
+    setSearchValue(currentSearch);
+    setPrevSearch(currentSearch);
+  }
+
+  const handleHeaderSearch = () => {
+    const trimmed = searchValue?.trim() || null;
+    const searchParams = getResetSearchParams(trimmed);
+    const queryString = searchParams.toString();
+    navigate(`${ROUTE_PATH.Products}${queryString ? `?${queryString}` : ''}`);
+  };
 
   return (
     <>
@@ -36,17 +47,11 @@ export const Header = () => {
         <div className="px-5 py-1">
           <div className="d-flex align-items-center justify-content-between small">
             <div><a href='tel:111-111-1111'>111-111-1111</a> | <a href='mailto:contact@email.com'>contact@email.com</a></div>
-            <Clickable onClick={() => {
-              if (user.user) {
-                user.logout();
-              } else {
-                navigate(ROUTE_PATH.LOGIN);
-              }
-            }}>
+            <Clickable onClick={() => logout()}>
               <div>
-                Hello, {user.user ? user.user.user.email : 'Guest'}!
+                Hello, {user.email}!
                 <span className="text-info ms-1">
-                  ({user.user ? 'Logout?' : 'Login?'})
+                  (Logout?)
                 </span>
               </div>
             </Clickable>
@@ -81,10 +86,7 @@ export const Header = () => {
                 {
                   key: "favorites",
                   label: "Favorites",
-                  onClick: () => {
-                    // Navigate to favorites page
-                    console.log("Navigate to favorites");
-                  },
+                  onClick: () => navigate(`${ROUTE_PATH.Products}?${FILTER_PARAM_KEYS.favoritesOnly}=true`),
                 },
                 {
                   key: "my-account",
@@ -97,21 +99,45 @@ export const Header = () => {
               ]}
             />
             {/* Desktop search - hidden on mobile */}
-            <div className="d-none d-lg-block w-auto">
-              <ControlledSearchInput
-                value={currentSearch}
-                onSearch={handleHeaderSearch}
-              />
+            <div className="d-none d-lg-block w-auto" onKeyDown={onEnterKey(handleHeaderSearch)}>
+              <div className="d-flex align-items-center gap-1">
+                <TextInput
+                  placeholder="Search..."
+                  value={searchValue}
+                  onChange={setSearchValue}
+                  type="search"
+                />
+                <ActionButton
+                  onClick={handleHeaderSearch}
+                  variant="outline"
+                  color={Enums.Color.Secondary}
+                >
+                  <Icon icon={(x) => x.cilSearch} size="sm" />
+                </ActionButton>
+              </div>
             </div>
             <CartWidget />
           </div>
         </Row>
         {/* Mobile search row - visible only on mobile */}
         <Row className="d-lg-none mt-3">
-          <ControlledSearchInput
-            value={currentSearch}
-            onSearch={handleHeaderSearch}
-          />
+          <div className="d-flex align-items-center gap-1">
+            <div className="flex-grow-1">
+              <TextInput
+                placeholder="Search..."
+                value={searchValue}
+                onChange={setSearchValue}
+                type="search"
+              />
+            </div>
+            <ActionButton
+              onClick={handleHeaderSearch}
+              variant="outline"
+              color={Enums.Color.Secondary}
+            >
+              <Icon icon={(x) => x.cilSearch} size="sm" />
+            </ActionButton>
+          </div>
         </Row>
       </div>
       </div>
@@ -132,17 +158,13 @@ export const Header = () => {
                 <a href="mailto:contact@email.com">contact@email.com</a>
               </div>
               <Clickable onClick={() => {
-                if (user.user) {
-                  user.logout();
-                } else {
-                  navigate(ROUTE_PATH.LOGIN);
-                }
+                logout();
                 setMobileMenuOpen(false);
               }}>
                 <div>
-                  Hello, {user.user ? user.user.user.email : 'Guest'}!
+                  Hello, {user.email}!
                   <span className="text-info ms-1">
-                    ({user.user ? 'Logout?' : 'Login?'})
+                    (Logout?)
                   </span>
                 </div>
               </Clickable>
@@ -156,7 +178,7 @@ export const Header = () => {
             />
             <Clickable
               onClick={() => {
-                console.log("Navigate to favorites");
+                navigate(`${ROUTE_PATH.Products}?${FILTER_PARAM_KEYS.favoritesOnly}=true`);
                 setMobileMenuOpen(false);
               }}
             >

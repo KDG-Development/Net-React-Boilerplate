@@ -6,13 +6,14 @@ import { Drawer } from "../../components/Drawer";
 import { getCategoryByPath, getCategories } from "../../api/categories";
 import { getProducts } from "../../api/products";
 import { CategoryTree } from "../_common/templates/components/MegaMenu";
-import { TProduct } from "../../types/product/product";
+import { TCatalogProductSummary } from "../../types/product/product";
 import { PaginatedResponse } from "../../types/common/pagination";
 import { usePagination } from "../../hooks/usePagination";
 import { useProductFilters } from "../../hooks/useProductFilters";
 import { SubcategoryNav } from "./components/SubcategoryNav";
 import { ProductGrid } from "./components/ProductGrid";
 import { FilterSidebar } from "./components/FilterSidebar";
+import { ActiveFilters } from "./components/ActiveFilters";
 import { CategoryPageSkeleton } from "./components/CategoryPageSkeleton";
 import { ROUTE_PATH } from "../../routing/AppRouter";
 import { CategoryDetail, SubcategoryInfo } from "../../types/category/category";
@@ -24,14 +25,19 @@ export const CategoryPage = () => {
 
   const [category, setCategory] = useState<CategoryDetail | null>(null);
   const [topLevelCategories, setTopLevelCategories] = useState<SubcategoryInfo[]>([]);
-  const [products, setProducts] = useState<PaginatedResponse<TProduct> | null>(null);
+  const [products, setProducts] = useState<PaginatedResponse<TCatalogProductSummary> | null>(null);
   const [loading, setLoading] = useState(true);
   const [productsLoading, setProductsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   const { pagination, setPage } = usePagination();
-  const { filters, search, selectedPriceRange, setPriceRange, setSearch } = useProductFilters();
+  const { filter, setFilter } = useProductFilters();
+
+  const handleFilterChange = (newFilter: typeof filter) => {
+    setFilter(newFilter);
+    setFilterDrawerOpen(false);
+  };
 
   // Load category details or top-level categories for root view
   useEffect(() => {
@@ -87,7 +93,7 @@ export const CategoryPage = () => {
     getProducts({
       categoryId: category?.id,
       pagination,
-      filters,
+      filters: filter,
       success: (data) => {
         setProducts(data);
         setProductsLoading(false);
@@ -97,7 +103,7 @@ export const CategoryPage = () => {
         setProductsLoading(false);
       }
     });
-  }, [isRootView, category, loading, pagination.page, pagination.pageSize, filters.minPrice, filters.maxPrice, filters.search]);
+  }, [isRootView, category, loading, pagination.page, pagination.pageSize, filter.minPrice, filter.maxPrice, filter.search, filter.favoritesOnly]);
 
   const pageTitle = isRootView ? 'All Products' : category?.name || '';
   const subcategories = isRootView ? topLevelCategories : (category?.subcategories || []);
@@ -189,25 +195,21 @@ export const CategoryPage = () => {
                       position="start"
                     >
                       <FilterSidebar
-                        selectedPriceRange={selectedPriceRange}
-                        onPriceRangeChange={setPriceRange}
-                        search={search}
-                        onSearchChange={(term) => {
-                          setSearch(term);
-                          setFilterDrawerOpen(false);
-                        }}
+                        filter={filter}
+                        onFilterChange={handleFilterChange}
                       />
                     </Drawer>
                   </div>
+
+                  {/* Active filter badges */}
+                  <ActiveFilters filter={filter} onFilterChange={setFilter} />
 
                   <Row>
                     {/* Filter Sidebar - Desktop only */}
                     <Col md={3} className="d-none d-lg-block">
                       <FilterSidebar
-                        selectedPriceRange={selectedPriceRange}
-                        onPriceRangeChange={setPriceRange}
-                        search={search}
-                        onSearchChange={setSearch}
+                        filter={filter}
+                        onFilterChange={handleFilterChange}
                       />
                     </Col>
 

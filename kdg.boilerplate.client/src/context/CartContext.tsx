@@ -1,12 +1,12 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { TProduct } from "../types/product/product";
+import { TCatalogProductSummary } from "../types/product/product";
 import { TCartItem } from "../types/template/cart";
 import { getCart, replaceCart, TCartItemRequest } from "../api/cart";
 import { useAuthContext } from "./AuthContext";
 
 type TCartContext = {
   cartItems: TCartItem[];
-  addItem: (product: TProduct, quantity?: number) => void;
+  addItem: (product: TCatalogProductSummary, quantity?: number) => void;
   updateQuantity: (id: string, delta: number) => void;
   removeItem: (id: string) => void;
   clearCart: () => void;
@@ -56,7 +56,7 @@ export const CartContextProvider = (props: TProviderProps) => {
     });
   }, [user]);
 
-  const addItem = (product: TProduct, quantity: number = 1) => {
+  const addItem = (product: TCatalogProductSummary, quantity: number = 1) => {
     const existingItem = cartItems.find((item) => item.id === product.id);
     const newItems = existingItem
       ? cartItems.map((item) =>

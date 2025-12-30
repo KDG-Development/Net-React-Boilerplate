@@ -1,6 +1,7 @@
 import { composeAppRoutingProvider, Conditional, Loader, RouteType } from 'kdg-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useAuthContext } from '../context/AuthContext'
+import { UserContextProvider } from '../context/UserContext'
 import Storage from '../common/storage'
 import { Login } from '../views/login/Login'
 import { Home } from '../views/Home/Home'
@@ -21,6 +22,10 @@ export const ROUTE_PATH = {
   Favorites: '/favorites',
   MyAccount: '/my-account',
 } as const;
+
+const withUser = (element: React.ReactNode) => (
+  <UserContextProvider>{element}</UserContextProvider>
+)
 
 export const AppRouter = () => {
 
@@ -79,7 +84,7 @@ export const AppRouter = () => {
                   render:defaultGateRender,
                 }
               },
-              render:<Home/>,
+              render:withUser(<Home/>),
             },
             {
               kind:RouteType.PRIVATE,
@@ -90,7 +95,7 @@ export const AppRouter = () => {
                   render:defaultGateRender,
                 }
               },
-              render:<CategoryPage/>,
+              render:withUser(<CategoryPage/>),
             },
             {
               kind:RouteType.PRIVATE,
@@ -101,7 +106,7 @@ export const AppRouter = () => {
                   render:defaultGateRender,
                 }
               },
-              render:<ProductDetailPage/>,
+              render:withUser(<ProductDetailPage/>),
             },
           ],
         })

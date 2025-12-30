@@ -10,6 +10,10 @@ export const tryParseJWT = (jwt:string):TUserAuthBase => {
     user: {
       id: user.Id,
       email: user.Email,
+      organization: user.Organization ? {
+        id: user.Organization.Id,
+        name: user.Organization.Name,
+      } : null,
       permissionGroups: (user.PermissionGroups ?? []).map((pg: { PermissionGroup: string }) => pg.PermissionGroup),
       permissions: (user.Permissions ?? []).map((p: { Permission: string }) => p.Permission),
     }

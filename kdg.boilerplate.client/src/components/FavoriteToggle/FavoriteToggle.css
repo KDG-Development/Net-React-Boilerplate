@@ -1,0 +1,24 @@
+.favorite-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+.favorite-toggle-btn.is-favorite .favorite-icon {
+  color: var(--cui-danger, #e55353);
+}
+
+.favorite-toggle-btn.is-not-favorite .favorite-icon {
+  color: var(--cui-danger, #e55353);
+}
+
+.favorite-toggle-btn:hover {
+  transform: scale(1.1);
+}
+

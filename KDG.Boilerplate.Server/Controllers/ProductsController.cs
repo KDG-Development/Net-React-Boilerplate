@@ -8,7 +8,7 @@ namespace KDG.Boilerplate.Server.Controllers;
 [ApiController]
 [Route("/api/[controller]")]
 [Authorize]
-public class ProductsController : ControllerBase
+public class ProductsController : ApiControllerBase
 {
     private readonly IProductService _productService;
 
@@ -23,14 +23,14 @@ public class ProductsController : ControllerBase
         [FromQuery] PaginationParams pagination,
         [FromQuery] ProductFilterParams filters)
     {
-        var products = await _productService.GetProductsAsync(pagination, categoryId, filters);
+        var products = await _productService.GetCatalogProductsAsync(UserId, pagination, categoryId, filters);
         return Ok(products);
     }
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetProductById(Guid id)
     {
-        var product = await _productService.GetProductByIdAsync(id);
+        var product = await _productService.GetCatalogProductByIdAsync(id, UserId);
         if (product == null)
             return NotFound();
         return Ok(product);

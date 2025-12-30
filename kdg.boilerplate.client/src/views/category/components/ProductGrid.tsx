@@ -1,29 +1,33 @@
-import { Card, Col, Conditional, EntityConditional, Image, Row } from "kdg-react";
-import { Link } from "react-router-dom";
-import { TProduct } from "../../../types/product/product";
+import { Card, Clickable, Col, Conditional, EntityConditional, Image, Row, useAppNavigation } from "kdg-react";
+import { TCatalogProductSummary } from "../../../types/product/product";
 import { PaginatedResponse } from "../../../types/common/pagination";
 import { formatCurrency } from "../../../util/format";
 import { Pagination } from "./Pagination";
 import { ProductGridSkeleton } from "./ProductGridSkeleton";
 import { ROUTE_BASE } from "../../../routing/AppRouter";
+import { FavoriteToggle } from "../../../components/FavoriteToggle/FavoriteToggle";
 import placeholderImage from "../../../assets/images/logo.png";
 
 type ProductGridProps = {
-  data: PaginatedResponse<TProduct> | null;
+  data: PaginatedResponse<TCatalogProductSummary> | null;
   loading: boolean;
   onPageChange: (page: number) => void;
 };
 
-const ProductCard = (props: { product: TProduct }) => {
-  const primaryImage = props.product.images[0]?.src ?? placeholderImage;
+type ProductCardProps = {
+  product: TCatalogProductSummary;
+};
 
+const ProductCard = (props: ProductCardProps) => {
+  const primaryImage = props.product.images[0]?.src ?? placeholderImage;
+  const navigate = useAppNavigation();
   return (
-    <Link to={`${ROUTE_BASE.Products}/${props.product.id}`} className="text-decoration-none">
-      <Card
-        className="shadow-none h-100 product-card"
-        body={{
-          content: (
-            <>
+    <Card
+      className="shadow-none h-100 product-card"
+      body={{
+        content: (
+          <div className="position-relative">
+            <Clickable onClick={() => navigate(`${ROUTE_BASE.Products}/${props.product.id}`)}>
               <div className="mb-3 d-flex align-items-center justify-content-center product-image-container">
                 <Image 
                   src={primaryImage} 
@@ -39,16 +43,20 @@ const ProductCard = (props: { product: TProduct }) => {
                   {formatCurrency(props.product.price)}
                 </p>
               </div>
-            </>
-          ),
-        }}
-      />
-    </Link>
+            </Clickable>
+            <FavoriteToggle
+              productId={props.product.id}
+              isFavorite={props.product.isFavorite}
+              className="position-absolute top-0 end-0 p-2"
+            />
+          </div>
+        ),
+      }}
+    />
   );
 };
 
 export const ProductGrid = (props: ProductGridProps) => {
-
   return (
     <Conditional
       condition={props.loading}
