@@ -1,4 +1,4 @@
-import { TUserBase } from "../user/user"
+import { TUserBase } from "../entities/user/user"
 
 /**
  * These types are designed to be extended and consumed, rather than modified.

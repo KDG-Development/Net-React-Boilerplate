@@ -7,7 +7,7 @@ import { CartWidget } from "./CartWidget";
 import { ROUTE_PATH } from "../../../../routing/AppRouter";
 import { useUserContext } from "../../../../context/UserContext";
 import { getResetSearchParams } from "../../../../hooks/useProductFilters";
-import { FILTER_PARAM_KEYS } from "../../../../types/product/product";
+import { FILTER_PARAM_KEYS } from "../../../../types/requests/products/products";
 import { Drawer } from "../../../../components/Drawer";
 import { onEnterKey } from "../../../../util/keyboard";
 import { PermissionGate } from "../../../../components/PermissionGate";

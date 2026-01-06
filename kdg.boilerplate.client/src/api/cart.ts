@@ -1,11 +1,7 @@
 import { RequestMethodArgs, PostRequestMethodArgs } from "kdg-react"
 import { Api } from "./_common"
-import { TCartItem } from "../types/template/cart"
-
-export type TCartItemRequest = {
-  productId: string;
-  quantity: number;
-};
+import { TCartItem } from "../types/entities/cart/cart"
+import { TCartItemRequest } from "../types/requests/cart/cart"
 
 const mapCartResponse = (data: any): TCartItem[] =>
   data.map((item: any): TCartItem => ({

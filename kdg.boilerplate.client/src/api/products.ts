@@ -1,7 +1,8 @@
 import { RequestMethodArgs } from "kdg-react"
 import { Api } from "./_common"
 import { PaginatedResponse, PaginationParams } from "../types/common/pagination"
-import { TCatalogProductSummary, TProductImage, TCatalogProductDetail, TProductBreadcrumb, ProductFilterParams } from "../types/product/product"
+import { TCatalogProductSummary, TProductImage, TCatalogProductDetail, TProductBreadcrumb } from "../types/entities/catalog/product"
+import { ProductFilterParams } from "../types/requests/products/products"
 
 export const getProducts = async (
   args: RequestMethodArgs<PaginatedResponse<TCatalogProductSummary>> & { 

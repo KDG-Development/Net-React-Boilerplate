@@ -1,6 +1,6 @@
 import { postRequest, PostRequestMethodArgs } from "kdg-react"
 import { Api } from "./_common"
-import { TUserLoginForm } from "../types/user/user"
+import { TUserLoginForm } from "../types/requests/auth/auth"
 
 export const appLogin = (args:PostRequestMethodArgs<TUserLoginForm,string>) =>
   postRequest({

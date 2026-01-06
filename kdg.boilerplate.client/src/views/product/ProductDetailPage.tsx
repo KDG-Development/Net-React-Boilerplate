@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { Col, Row, Conditional, EntityConditional, Image, Icon, Clickable, NumberInput, ActionButton, Enums } from "kdg-react";
 import { BaseTemplate } from "../_common/templates/BaseTemplate";
 import { getProductById } from "../../api/products";
-import { TCatalogProductDetail } from "../../types/product/product";
+import { TCatalogProductDetail } from "../../types/entities/catalog/product";
 import { useCartContext } from "../../context/CartContext";
 import { formatCurrency } from "../../util/format";
 import { ROUTE_PATH } from "../../routing/AppRouter";

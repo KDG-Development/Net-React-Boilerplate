@@ -18,3 +18,11 @@ export type CategoryDetail = {
   subcategories: SubcategoryInfo[];
 };
 
+export type CategoryNode = {
+  label: string;
+  slug: string;
+  children?: CategoryTree;
+};
+
+export type CategoryTree = Record<string, CategoryNode>;
+

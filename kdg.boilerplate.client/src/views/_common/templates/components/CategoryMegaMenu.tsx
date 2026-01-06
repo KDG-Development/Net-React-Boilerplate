@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCategories } from "../../../../api/categories";
-import { MegaMenu, CategoryTree } from "./MegaMenu";
+import { MegaMenu } from "./MegaMenu";
+import { CategoryTree } from "../../../../types/entities/catalog/category";
 import { ROUTE_PATH } from "../../../../routing/AppRouter";
 
 type CategoryMegaMenuProps = {

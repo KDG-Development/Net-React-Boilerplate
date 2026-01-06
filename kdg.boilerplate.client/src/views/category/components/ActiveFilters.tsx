@@ -1,5 +1,5 @@
 import { Badge, Clickable, Conditional, Enums, Icon } from "kdg-react";
-import { ProductFilterParams, DEFAULT_PRODUCT_FILTERS } from "../../../types/product/product";
+import { ProductFilterParams, DEFAULT_PRODUCT_FILTERS } from "../../../types/requests/products/products";
 
 type ActiveFiltersProps = {
   filter: ProductFilterParams;

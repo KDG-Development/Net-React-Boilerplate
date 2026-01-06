@@ -1,13 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Clickable, Icon, Loader, Conditional, EntityConditional } from "kdg-react";
-
-export type CategoryNode = {
-  label: string;
-  slug: string;
-  children?: CategoryTree;
-};
-
-export type CategoryTree = Record<string, CategoryNode>;
+import { CategoryNode, CategoryTree } from "../../../../types/entities/catalog/category";
 
 type MegaMenuProps = {
   trigger: React.ReactNode;

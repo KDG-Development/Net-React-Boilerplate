@@ -1,7 +1,7 @@
 import { RequestMethodArgs } from "kdg-react"
-import { CategoryTree, CategoryNode } from "../views/_common/templates/components/MegaMenu"
+import { CategoryTree, CategoryNode } from "../types/entities/catalog/category"
 import { Api } from "./_common"
-import { CategoryDetail } from "../types/category/category"
+import { CategoryDetail } from "../types/entities/catalog/category"
 
 export const getCategories = async (args: RequestMethodArgs<CategoryTree>) => {
   const mapCategory = (category: any): CategoryNode => {

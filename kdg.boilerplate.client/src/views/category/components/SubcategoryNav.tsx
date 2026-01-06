@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { ActionButton, Enums } from "kdg-react";
 import { ROUTE_PATH } from "../../../routing/AppRouter";
-import { SubcategoryInfo } from "../../../types/category/category";
+import { SubcategoryInfo } from "../../../types/entities/catalog/category";
 
 type SubcategoryNavProps = {
   subcategories: SubcategoryInfo[];

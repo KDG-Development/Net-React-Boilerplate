@@ -1,5 +1,5 @@
 import { Card, Clickable, Col, Conditional, EntityConditional, Image, Row, useAppNavigation } from "kdg-react";
-import { TCatalogProductSummary } from "../../../types/product/product";
+import { TCatalogProductSummary } from "../../../types/entities/catalog/product";
 import { PaginatedResponse } from "../../../types/common/pagination";
 import { formatCurrency } from "../../../util/format";
 import { Pagination } from "./Pagination";

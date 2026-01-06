@@ -1,7 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { TCatalogProductSummary } from "../types/product/product";
-import { TCartItem } from "../types/template/cart";
-import { getCart, replaceCart, TCartItemRequest } from "../api/cart";
+import { TCatalogProductSummary } from "../types/entities/catalog/product";
+import { TCartItem } from "../types/entities/cart/cart";
+import { getCart, replaceCart } from "../api/cart";
+import { TCartItemRequest } from "../types/requests/cart/cart";
 import { useAuthContext } from "./AuthContext";
 
 type TCartContext = {

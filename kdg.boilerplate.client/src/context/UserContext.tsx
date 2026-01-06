@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo } from "react"
-import { TUserBase } from "../types/user/user"
+import { TUserBase } from "../types/entities/user/user"
 import { useAuthContext } from "./AuthContext"
 import { TPermissionGroup } from "../types/common/permissionGroups"
 

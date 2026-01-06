@@ -1,6 +1,7 @@
 import { RequestMethodArgs, PostRequestMethodArgs } from "kdg-react"
 import { Api } from "../_common"
-import { THeroSlide, THeroSlideFilters, TCreateHeroSlideDto, TUpdateHeroSlideDto, TReorderHeroSlidesDto } from "../../types/crm/heroSlide"
+import { THeroSlide } from "../../types/crm/heroSlide"
+import { THeroSlideFilters, TCreateHeroSlideDto, TUpdateHeroSlideDto, TReorderHeroSlidesDto } from "../../types/requests/heroSlides/heroSlides"
 
 export const getHeroSlides = async (args: RequestMethodArgs<THeroSlide[]> & { filters?: THeroSlideFilters }) => {
   await Api.Request.Get({

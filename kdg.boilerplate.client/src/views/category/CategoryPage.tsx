@@ -5,8 +5,8 @@ import { BaseTemplate } from "../_common/templates/BaseTemplate";
 import { Drawer } from "../../components/Drawer";
 import { getCategoryByPath, getCategories } from "../../api/categories";
 import { getProducts } from "../../api/products";
-import { CategoryTree } from "../_common/templates/components/MegaMenu";
-import { TCatalogProductSummary } from "../../types/product/product";
+import { CategoryTree } from "../../types/entities/catalog/category";
+import { TCatalogProductSummary } from "../../types/entities/catalog/product";
 import { PaginatedResponse } from "../../types/common/pagination";
 import { usePagination } from "../../hooks/usePagination";
 import { useProductFilters } from "../../hooks/useProductFilters";
@@ -16,7 +16,7 @@ import { FilterSidebar } from "./components/FilterSidebar";
 import { ActiveFilters } from "./components/ActiveFilters";
 import { CategoryPageSkeleton } from "./components/CategoryPageSkeleton";
 import { ROUTE_PATH } from "../../routing/AppRouter";
-import { CategoryDetail, SubcategoryInfo } from "../../types/category/category";
+import { CategoryDetail, SubcategoryInfo } from "../../types/entities/catalog/category";
 
 export const CategoryPage = () => {
   const [searchParams] = useSearchParams();

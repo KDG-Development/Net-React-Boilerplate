@@ -2,7 +2,7 @@ import { Row, Col, AsyncButton, useAppNavigation, TextInput, PasswordInput } fro
 import { useEffect, useState } from 'react'
 import { useAuthContext } from '../../context/AuthContext'
 import { ROUTE_PATH } from '../../routing/AppRouter'
-import { defaultUserLoginForm, TUserLoginForm } from '../../types/user/user'
+import { defaultUserLoginForm, TUserLoginForm } from '../../types/requests/auth/auth'
 import { appLogin } from '../../api/auth'
 import { tryParseJWT } from '../../util/jwt'
 

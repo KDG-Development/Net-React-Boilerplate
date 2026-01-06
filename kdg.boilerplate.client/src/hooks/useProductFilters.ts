@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ProductFilterParams, FILTER_PARAM_KEYS } from '../types/product/product';
+import { ProductFilterParams, FILTER_PARAM_KEYS } from '../types/requests/products/products';
 import { PAGINATION_PARAM_KEYS } from '../types/common/pagination';
 
 const parseNumber = (value: string | null): number | null => {

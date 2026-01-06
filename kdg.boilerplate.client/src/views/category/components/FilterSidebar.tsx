@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ActionButton, Clickable, Conditional, Radio, TextInput } from "kdg-react";
-import { ProductFilterParams, DEFAULT_PRICE_RANGE_OPTIONS } from "../../../types/product/product";
+import { ProductFilterParams } from "../../../types/requests/products/products";
+import { DEFAULT_PRICE_RANGE_OPTIONS } from "../../../types/constants/priceRange";
 import { useHeaderHeight } from "../../../hooks/useHeaderHeight";
 import { useUserContext } from "../../../context/UserContext";
 import { onEnterKey } from "../../../util/keyboard";
