@@ -1,3 +1,4 @@
+using KDG.Boilerplate.Server.Models.Requests.Categories;
 using KDG.Boilerplate.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,24 +25,11 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpGet("by-path")]
-    public async Task<IActionResult> GetCategoryByPath([FromQuery] string path)
+    public async Task<IActionResult> GetCategoryByPath([FromQuery] GetCategoryByPathRequest request)
     {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            return BadRequest("Path is required");
-        }
-
-        // URL-decode the path (handles %2F -> /) and normalize
-        var decodedPath = Uri.UnescapeDataString(path);
-        var normalizedPath = decodedPath.Trim('/');
-
-        var category = await _categoryService.GetCategoryByPathAsync(normalizedPath);
-
+        var category = await _categoryService.GetCategoryByPathAsync(request.NormalizedPath);
         if (category == null)
-        {
             return NotFound();
-        }
-
         return Ok(category);
     }
 }

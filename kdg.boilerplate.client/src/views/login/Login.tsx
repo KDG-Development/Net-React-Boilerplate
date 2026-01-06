@@ -5,11 +5,13 @@ import { ROUTE_PATH } from '../../routing/AppRouter'
 import { defaultUserLoginForm, TUserLoginForm } from '../../types/requests/auth/auth'
 import { appLogin } from '../../api/auth'
 import { tryParseJWT } from '../../util/jwt'
+import { useFormErrors } from '../../hooks/useFormErrors'
 
 export const Login = () => {
 
   const [form,setForm] = useState<TUserLoginForm>(defaultUserLoginForm)
   const [loading,setLoading] = useState(false)
+  const { getError, tryParseResponseErrors, clearErrors } = useFormErrors<TUserLoginForm>()
 
   const {login,user} = useAuthContext()
   const navigate = useAppNavigation()
@@ -21,12 +23,13 @@ export const Login = () => {
   },[user])
 
   const handleLogin = async () => {
+    clearErrors()
     setLoading(true)
     try {
-      // add your custom login functionality here
       await appLogin({
         body:form,
         success:x => login(tryParseJWT(x)),
+        errorHandler: tryParseResponseErrors
       })
     } catch (e) {
       console.error('unable to login:', e)
@@ -59,11 +62,13 @@ export const Login = () => {
             label='Email'
             value={form.email}
             onChange={email => setForm(prev => ({...prev, email}))}
+            error={getError(e => e.email)}
           />
           <PasswordInput
             label='Password'
             value={form.password}
             onChange={password => setForm(prev => ({...prev, password}))}
+            error={getError(e => e.password)}
           /> 
           <AsyncButton
             className='my-4'

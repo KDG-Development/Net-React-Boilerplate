@@ -39,35 +39,13 @@ public class HeroSlidesController : ApiControllerBase
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> CreateSlide(
-        [FromForm] IFormFile image,
-        [FromForm] string buttonText,
-        [FromForm] string buttonUrl,
-        [FromForm] int sortOrder = 0,
-        [FromForm] bool isActive = true)
+    public async Task<IActionResult> CreateSlide([FromForm] CreateHeroSlideRequest request)
     {
-        if (image == null || image.Length == 0)
-            return BadRequest("Image is required");
-
-        if (string.IsNullOrWhiteSpace(buttonText))
-            return BadRequest("Button text is required");
-
-        if (string.IsNullOrWhiteSpace(buttonUrl))
-            return BadRequest("Button URL is required");
-
-        var request = new CreateHeroSlideRequest
-        {
-            ButtonText = buttonText,
-            ButtonUrl = buttonUrl,
-            SortOrder = sortOrder,
-            IsActive = isActive
-        };
-
-        using var stream = image.OpenReadStream();
+        using var stream = request.Image!.OpenReadStream();
         var slide = await _heroSlidesService.CreateSlideAsync(
             stream,
-            image.FileName,
-            image.ContentType,
+            request.Image.FileName,
+            request.Image.ContentType,
             request);
 
         _logger.LogInformation("User {UserId} created hero slide {SlideId}", UserId, slide.Id);
@@ -90,17 +68,14 @@ public class HeroSlidesController : ApiControllerBase
 
     [HttpPut("{id:guid}/image")]
     [Authorize]
-    public async Task<IActionResult> UpdateSlideImage(Guid id, [FromForm] IFormFile image)
+    public async Task<IActionResult> UpdateSlideImage(Guid id, [FromForm] UpdateSlideImageRequest request)
     {
-        if (image == null || image.Length == 0)
-            return BadRequest("Image is required");
-
-        using var stream = image.OpenReadStream();
+        using var stream = request.Image!.OpenReadStream();
         var slide = await _heroSlidesService.UpdateSlideImageAsync(
             id,
             stream,
-            image.FileName,
-            image.ContentType);
+            request.Image.FileName,
+            request.Image.ContentType);
 
         if (slide == null)
             return NotFound();

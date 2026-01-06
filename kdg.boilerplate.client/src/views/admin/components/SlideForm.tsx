@@ -3,6 +3,7 @@ import { ActionButton, TextInput, Radio, Row, Col, Conditional, AsyncButton, Enu
 import { THeroSlide } from '../../../types/crm/heroSlide'
 import { createHeroSlide, updateHeroSlide, updateHeroSlideImage } from '../../../api/crm/heroSlides'
 import { BackgroundImage } from '../../../components/BackgroundImage'
+import { useFormErrors } from '../../../hooks/useFormErrors'
 
 type TSlideFormProps = {
   slide: THeroSlide | null
@@ -35,10 +36,10 @@ export const SlideForm = (props: TSlideFormProps) => {
   })
 
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { getError, tryParseResponseErrors, clearErrors } = useFormErrors<TFormState>()
 
   const handleSubmit = async () => {
-    setError(null)
+    clearErrors()
     setLoading(true)
 
     if (isEditing && props.slide) {
@@ -60,8 +61,8 @@ export const SlideForm = (props: TSlideFormProps) => {
                 setLoading(false)
                 props.onSuccess()
               },
-              errorHandler: () => {
-                setError('Failed to update image')
+              errorHandler: (response) => {
+                tryParseResponseErrors(response)
                 setLoading(false)
               }
             })
@@ -70,8 +71,8 @@ export const SlideForm = (props: TSlideFormProps) => {
             props.onSuccess()
           }
         },
-        errorHandler: () => {
-          setError('Failed to update slide')
+        errorHandler: (response) => {
+          tryParseResponseErrors(response)
           setLoading(false)
         }
       })
@@ -87,8 +88,8 @@ export const SlideForm = (props: TSlideFormProps) => {
           setLoading(false)
           props.onSuccess()
         },
-        errorHandler: () => {
-          setError('Failed to create slide')
+        errorHandler: (response) => {
+          tryParseResponseErrors(response)
           setLoading(false)
         }
       })
@@ -97,13 +98,6 @@ export const SlideForm = (props: TSlideFormProps) => {
 
   return (
     <div className="slide-form">
-      <Conditional
-        condition={!!error}
-        onTrue={() => (
-          <div className="alert alert-danger mb-3">{error}</div>
-        )}
-      />
-
       <Row className="mb-3">
         <Col md={12}>
           <FileInput
@@ -116,6 +110,7 @@ export const SlideForm = (props: TSlideFormProps) => {
               },
             }}
             accept={['image/jpeg', 'image/png', 'image/gif', 'image/webp']}
+            error={getError(e => e.image)}
           />
           <Conditional
             condition={isEditing && !!props.slide?.imageUrl}
@@ -142,6 +137,7 @@ export const SlideForm = (props: TSlideFormProps) => {
             value={form.buttonText}
             onChange={(buttonText) => setForm(prev => ({ ...prev, buttonText }))}
             placeholder="e.g., Shop Now"
+            error={getError(e => e.buttonText)}
           />
         </Col>
         <Col md={6}>
@@ -150,6 +146,7 @@ export const SlideForm = (props: TSlideFormProps) => {
             value={form.buttonUrl}
             onChange={(buttonUrl) => setForm(prev => ({ ...prev, buttonUrl }))}
             placeholder="e.g., /products/featured"
+            error={getError(e => e.buttonUrl)}
           />
         </Col>
       </Row>

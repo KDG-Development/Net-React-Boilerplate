@@ -21,7 +21,8 @@ builder.Services
     .AddApplicationServices()
     .AddBlobStorage(builder.Configuration)
     .AddJwtAuthentication(builder.Configuration)
-    .AddAppCors(builder.Configuration);
+    .AddAppCors(builder.Configuration)
+    .AddValidation();
 
 var app = builder.Build();
 
