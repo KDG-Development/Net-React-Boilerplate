@@ -7,10 +7,13 @@ import { Login } from '../views/login/Login'
 import { Home } from '../views/Home/Home'
 import { CategoryPage } from '../views/category/CategoryPage'
 import { ProductDetailPage } from '../views/product/ProductDetailPage'
+import { AdminSettings } from '../views/admin/AdminSettings'
 import { tryParseJWT, isTokenExpired } from '../util/jwt'
+import { PermissionGroup, TPermissionGroup } from '../types/common/permissionGroups'
 
 export const ROUTE_BASE = {
   Products: '/products',
+  Admin: '/admin',
 } as const;
 
 export const ROUTE_PATH = {
@@ -21,6 +24,7 @@ export const ROUTE_PATH = {
   ProductDetail: `${ROUTE_BASE.Products}/:productId`,
   Favorites: '/favorites',
   MyAccount: '/my-account',
+  Admin: ROUTE_BASE.Admin,
 } as const;
 
 const withUser = (element: React.ReactNode) => (
@@ -32,6 +36,9 @@ export const AppRouter = () => {
   const [loading,setLoading] = useState(true)
 
   const {user,login} = useAuthContext()
+
+  const hasPermissionGroup = (group: TPermissionGroup) =>
+    !!user?.user.permissionGroups.includes(group)
 
   const defaultGateRender = <Login/>
 
@@ -107,6 +114,17 @@ export const AppRouter = () => {
                 }
               },
               render:withUser(<ProductDetailPage/>),
+            },
+            {
+              kind:RouteType.PRIVATE,
+              paths:[ROUTE_PATH.Admin],
+              gate:{
+                allow:hasPermissionGroup(PermissionGroup.SystemAdmin),
+                onNotAllow:{
+                  render:defaultGateRender,
+                }
+              },
+              render:withUser(<AdminSettings />),
             },
           ],
         })

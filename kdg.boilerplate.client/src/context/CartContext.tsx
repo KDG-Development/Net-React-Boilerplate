@@ -35,7 +35,7 @@ export const CartContextProvider = (props: TProviderProps) => {
 
   const persistCart = useCallback((newItems: TCartItemRequest[]) => {
     replaceCart({
-      items: newItems,
+      body: newItems,
       success: setCartItems,
     });
   }, []);

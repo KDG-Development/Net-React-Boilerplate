@@ -35,7 +35,7 @@ export const FavoriteToggle = (props: FavoriteToggleProps) => {
           });
         } else {
           addFavorite({
-            productId: props.productId,
+            body: { productId: props.productId },
             success: () => {
               setIsFavorite(true);
             },

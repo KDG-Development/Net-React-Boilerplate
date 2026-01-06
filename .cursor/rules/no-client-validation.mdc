@@ -1,0 +1,8 @@
+---
+globs: *.tsx
+alwaysApply: false
+---
+- server handles all request validation - do not duplicate in client
+- rely on API errorHandler callbacks to display server validation errors
+- avoid client-side checks like required field validation before submit
+- let invalid requests reach the server and return proper error responses

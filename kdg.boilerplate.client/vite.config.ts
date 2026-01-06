@@ -39,8 +39,8 @@ if (!fs.existsSync(certFilePath) || !fs.existsSync(keyFilePath)) {
     fs.chmodSync(keyFilePath, 0o600);  // Only owner can read/write
 }
 
-const target = env.ASPNETCORE_HTTPS_PORT ? `https://0.0.0.0:${env.ASPNETCORE_HTTPS_PORT}` :
-    env.ASPNETCORE_URLS ? env.ASPNETCORE_URLS.split(';')[0] : 'https://0.0.0.0:7027';
+const target = env.ASPNETCORE_HTTPS_PORT ? `https://localhost:${env.ASPNETCORE_HTTPS_PORT}` :
+    env.ASPNETCORE_URLS ? env.ASPNETCORE_URLS.split(';')[0].replace('+', 'localhost') : 'https://localhost:7027';
 
 // https://vitejs.dev/config/
 export default defineConfig({

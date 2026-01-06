@@ -1,0 +1,8 @@
+---
+globs: Controllers/*.cs
+alwaysApply: false
+---
+- always return JSON from API endpoints, even for empty responses
+- use `Ok(new { })` instead of `NoContent()` for success with no data
+- kdg-react HTTP utilities call `.json()` on all responses
+- `NoContent()` causes JSON parse errors on the client

@@ -1,10 +1,17 @@
 import { Col, Row } from "kdg-react";
-import { BaseTemplate } from "../_common/templates/BaseTemplate";
+import { Header } from "../_common/templates/components/Header";
+import { Footer } from "../_common/templates/components/Footer";
+import { HeroBanner } from "../../components/HeroBanner/HeroBanner";
 
 export const Home = () => (
-  <BaseTemplate>
+  <>
+    <Header />
+    <HeroBanner />
     <Row>
-      <Col md={12}>Home</Col>
+      <Col md={12}>
+        {/* Homepage content goes here */}
+      </Col>
     </Row>
-  </BaseTemplate>
+    <Footer />
+  </>
 );

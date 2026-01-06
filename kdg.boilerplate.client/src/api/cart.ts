@@ -1,3 +1,4 @@
+import { RequestMethodArgs, PostRequestMethodArgs } from "kdg-react"
 import { Api } from "./_common"
 import { TCartItem } from "../types/template/cart"
 
@@ -16,10 +17,7 @@ const mapCartResponse = (data: any): TCartItem[] =>
     image: item.product.image,
   }));
 
-export const getCart = async (args: { 
-  success: (cart: TCartItem[]) => void;
-  errorHandler?: (e: any) => void;
-}) => {
+export const getCart = async (args: RequestMethodArgs<TCartItem[]>) => {
   await Api.Request.Get({
     url: `${Api.BASE_URL}/cart`,
     success: args.success,
@@ -28,14 +26,10 @@ export const getCart = async (args: {
   });
 };
 
-export const replaceCart = async (args: {
-  items: TCartItemRequest[];
-  success: (cart: TCartItem[]) => void;
-  errorHandler?: (e: any) => void;
-}) => {
+export const replaceCart = async (args: PostRequestMethodArgs<TCartItemRequest[], TCartItem[]>) => {
   await Api.Request.Post({
     url: `${Api.BASE_URL}/cart`,
-    body: args.items,
+    body: args.body,
     success: args.success,
     errorHandler: args.errorHandler,
     mapResult: mapCartResponse,

@@ -49,6 +49,8 @@ services:
     depends_on:
       db:
         condition: service_started
+      azurite:
+        condition: service_started
     tty: true
     stdin_open: true
 
@@ -87,6 +89,17 @@ services:
       - "5442:5432"
     volumes:
       - postgres_data_kdg-boilerplate:/var/lib/postgresql/data
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: kdg-boilerplate-azurite
+    ports:
+      - "10000:10000"  # Blob service
+      - "10001:10001"  # Queue service
+      - "10002:10002"  # Table service
+    volumes:
+      - azurite_data:/data
+    command: "azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --location /data --loose"
 
   unit-test:
     profiles: ["test"]
@@ -167,3 +180,4 @@ services:
 
 volumes:
   postgres_data_kdg-boilerplate:
+  azurite_data:

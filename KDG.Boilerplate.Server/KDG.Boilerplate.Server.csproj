@@ -44,6 +44,7 @@
     <PackageReference Include="KDG-Net-Zoho-Creator" Version="0.0.1" />
     <PackageReference Include="KDG-Net-Zoho-CRM" Version="0.0.1" />
     <PackageReference Include="KDG-Net-Users" Version="0.0.1" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.19.1" />
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.10" />
     <PackageReference Include="Site24x7.APMInsight.Agent" Version="6.9.2" />

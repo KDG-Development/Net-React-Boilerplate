@@ -10,6 +10,8 @@ import { getResetSearchParams } from "../../../../hooks/useProductFilters";
 import { FILTER_PARAM_KEYS } from "../../../../types/product/product";
 import { Drawer } from "../../../../components/Drawer";
 import { onEnterKey } from "../../../../util/keyboard";
+import { PermissionGate } from "../../../../components/PermissionGate";
+import { PermissionGroup } from "../../../../types/common/permissionGroups";
 
 export const Header = () => {
   const { user, logout } = useUserContext();
@@ -47,14 +49,25 @@ export const Header = () => {
         <div className="px-5 py-1">
           <div className="d-flex align-items-center justify-content-between small">
             <div><a href='tel:111-111-1111'>111-111-1111</a> | <a href='mailto:contact@email.com'>contact@email.com</a></div>
-            <Clickable onClick={() => logout()}>
-              <div>
-                Hello, {user.email}!
-                <span className="text-info ms-1">
-                  (Logout?)
-                </span>
-              </div>
-            </Clickable>
+            <div className="d-flex align-items-center gap-3">
+              <PermissionGate
+                group={PermissionGroup.SystemAdmin}
+                onTrue={() => (
+                  <Link to={ROUTE_PATH.Admin} className="text-decoration-none">
+                    <Icon icon={(x) => x.cilSettings} size="sm" className="me-1" />
+                    Admin
+                  </Link>
+                )}
+              />
+              <Clickable onClick={() => logout()}>
+                <div>
+                  Hello, {user.email}!
+                  <span className="text-info ms-1">
+                    (Logout?)
+                  </span>
+                </div>
+              </Clickable>
+            </div>
           </div>
         </div>
       </div>
@@ -192,6 +205,20 @@ export const Header = () => {
             >
               My Account
             </Clickable>
+            <PermissionGate
+              group={PermissionGroup.SystemAdmin}
+              onTrue={() => (
+                <Clickable
+                  onClick={() => {
+                    navigate(ROUTE_PATH.Admin);
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Icon icon={(x) => x.cilSettings} size="sm" className="me-1" />
+                  Admin Settings
+                </Clickable>
+              )}
+            />
           </nav>
         </Drawer>
       </div>

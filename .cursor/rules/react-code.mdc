@@ -11,3 +11,4 @@ globs: *.tsx
 - prefer boostrap/coreui css classnames
 - dont use inline styles
 - sensible type definition locations - domain goes in `src/types` folder, encapsulated template types can be in file, such as props
+- dont use barrel exports (index.ts) - import directly from component files

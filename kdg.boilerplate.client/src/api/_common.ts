@@ -111,8 +111,8 @@ export namespace Api {
         })
       )
     }
-    export const Delete = async <TRequest extends {}>(
-      params:BaseRequestParams<TRequest>,
+    export const Delete = async <TResponse extends {}>(
+      params:BaseRequestParams<TResponse>,
     ) => {
       await authenticatedRequest(token =>
         deleteRequest({

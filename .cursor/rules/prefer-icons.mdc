@@ -1,0 +1,9 @@
+---
+globs: *.tsx
+alwaysApply: false
+---
+- prefer `Icon` component from kdg-react over raw SVG elements
+- avoid unicode arrow/symbol characters (↑, ↓, →, ←, ✓, ✕) - use Icon instead
+- use the icon selector pattern: `icon={(x) => x.cilIconName}`
+- common icons: cilImage, cilSettings, cilMenu, cilSearch, cilChevronLeft, cilChevronRight, cilTrash, cilPencil, cilPlus, cilArrowTop, cilArrowBottom
+- use `size` prop for sizing: "sm", "lg", "xl", "3xl" etc

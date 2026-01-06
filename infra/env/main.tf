@@ -85,6 +85,32 @@ resource "azurerm_postgresql_flexible_server_database" "app" {
   depends_on = [azurerm_postgresql_flexible_server_configuration.extensions]
 }
 
+resource "azurerm_storage_account" "uploads" {
+  name                     = replace("st${local.name}${random_string.suffix.result}", "-", "")
+  resource_group_name      = azurerm_resource_group.this.name
+  location                 = azurerm_resource_group.this.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+  
+  blob_properties {
+    cors_rule {
+      allowed_headers    = ["*"]
+      allowed_methods    = ["GET", "HEAD"]
+      allowed_origins    = ["*"]
+      exposed_headers    = ["*"]
+      max_age_in_seconds = 3600
+    }
+  }
+  
+  tags = local.tags
+}
+
+resource "azurerm_storage_container" "uploads" {
+  name                  = "uploads"
+  storage_account_id    = azurerm_storage_account.uploads.id
+  container_access_type = "blob"
+}
+
 resource "azurerm_service_plan" "this" {
   name                = "asp-${local.name}"
   resource_group_name = azurerm_resource_group.this.name
@@ -156,6 +182,18 @@ resource "azurerm_key_vault_secret" "app_base_url" {
   key_vault_id = azurerm_key_vault.this.id
 }
 
+resource "azurerm_key_vault_secret" "blob_connection_string" {
+  name         = "blob-connection-string-${var.environment}"
+  value        = azurerm_storage_account.uploads.primary_connection_string
+  key_vault_id = azurerm_key_vault.this.id
+}
+
+resource "azurerm_key_vault_secret" "blob_container_url" {
+  name         = "blob-container-url-${var.environment}"
+  value        = "${azurerm_storage_account.uploads.primary_blob_endpoint}${azurerm_storage_container.uploads.name}"
+  key_vault_id = azurerm_key_vault.this.id
+}
+
 output "kv" {
   value = {
     name = azurerm_key_vault.this.name
@@ -186,4 +224,10 @@ output "postgres" {
   }
 }
 
-
+output "storage" {
+  value = {
+    name          = azurerm_storage_account.uploads.name
+    container     = azurerm_storage_container.uploads.name
+    blob_endpoint = azurerm_storage_account.uploads.primary_blob_endpoint
+  }
+}

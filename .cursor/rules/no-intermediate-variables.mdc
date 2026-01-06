@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+- avoid intermediate variables for single-use objects - inline them directly
+- do not create `const dto = {...}` just to pass it immediately to a function
+- inline object literals directly into function call arguments
+- exceptions: complex objects needing multi-step construction or used multiple times
