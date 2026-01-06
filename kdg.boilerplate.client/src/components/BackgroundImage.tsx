@@ -15,7 +15,7 @@ export const BackgroundImage = (props: TBackgroundImageProps) => (
     style={{
       width: props.width ?? '100%',
       height: props.height ?? '100%',
-      backgroundImage: `url(${props.imageUrl})`,
+      backgroundImage: `url(${encodeURI(props.imageUrl)})`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       borderRadius: props.borderRadius,

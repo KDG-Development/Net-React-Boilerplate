@@ -136,26 +136,32 @@
     transform: translateX(-50%);
     z-index: 3;
     display: flex;
-    gap: 0.75rem;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(8px);
+    border-radius: 100px;
   }
 
   &__dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.4);
-    border: 2px solid rgba(255, 255, 255, 0.6);
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    border: none;
+    border-radius: 100px;
+    background: rgba(255, 255, 255, 0.5);
     cursor: pointer;
-    transition: background 0.2s, transform 0.2s;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                background 0.3s ease;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.6);
-      transform: scale(1.1);
+      background: rgba(255, 255, 255, 0.8);
     }
 
     &--active {
+      width: 24px;
       background: #fff;
-      border-color: #fff;
     }
   }
 
