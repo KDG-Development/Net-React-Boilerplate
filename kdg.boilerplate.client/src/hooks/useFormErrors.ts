@@ -22,20 +22,27 @@ function extractPath<T>(selector: (obj: T) => unknown): string {
   return path.join('.')
 }
 
+type Primitive = string | number | boolean | bigint | symbol
+type BuiltIn = Date | File | Blob | FileList | RegExp | Error | Function | Map<unknown, unknown> | Set<unknown> | Promise<unknown>
+
+/**
+ * Recursive type that enables type-safe deep path traversal.
+ * - Preserves property names for autocomplete on plain objects
+ * - Adds numeric indexing for arrays
+ * - Returns `unknown` for primitives and built-ins to block further property access
+ */
+type DeepProxy<T> =
+  T extends null | undefined ? T :
+  T extends Primitive | BuiltIn ? unknown :
+  T extends (infer U)[] ? DeepProxy<U>[] & { [index: number]: DeepProxy<U> } :
+  T extends object ? { [K in keyof T]-?: DeepProxy<T[K]> } :
+  unknown
+
 export type UseFormErrorsResult<T> = {
   /** Current error state */
   errors: TError<T>
-  /** Get error for a simple field using type-safe selector */
-  getError: <K extends keyof T>(selector: (obj: T) => T[K]) => string | undefined
-  /** Get error for an array item field using type-safe selectors */
-  getArrayItemError: <
-    K extends keyof T,
-    TItem = T[K] extends (infer U)[] ? U : never
-  >(
-    arraySelector: (obj: T) => T[K],
-    index: number,
-    itemSelector?: (item: TItem) => unknown
-  ) => string | undefined
+  /** Get error for any field using type-safe selector with deep path support */
+  getError: (selector: (obj: DeepProxy<T>) => unknown) => string | undefined
   /** Parse validation errors from a Response - pass directly to errorHandler */
   tryParseResponseErrors: (response: Response) => Promise<void>
   /** Clear all errors */
@@ -47,7 +54,7 @@ export type UseFormErrorsResult<T> = {
  * 
  * @example
  * ```tsx
- * const { getError, getArrayItemError, tryParseResponseErrors, clearErrors } = useFormErrors<TCartForm>()
+ * const { getError, tryParseResponseErrors, clearErrors } = useFormErrors<TCartForm>()
  * 
  * // In API call
  * await createItem({ body: form, errorHandler: tryParseResponseErrors })
@@ -55,38 +62,20 @@ export type UseFormErrorsResult<T> = {
  * // In render - simple field
  * <TextInput error={getError(e => e.buttonText)} />
  * 
- * // In render - array item
+ * // In render - array item with nested field
  * items.map((item, i) => (
- *   <NumberInput error={getArrayItemError(e => e.items, i, item => item.quantity)} />
+ *   <NumberInput error={getError(e => e.items[i].quantity)} />
  * ))
  * ```
  */
 export function useFormErrors<T extends object>(): UseFormErrorsResult<T> {
   const [errors, setErrors] = useState<TError<T>>({} as TError<T>)
 
-  const getError = useCallback(<K extends keyof T>(
-    selector: (obj: T) => T[K]
+  const getError = useCallback((
+    selector: (obj: DeepProxy<T>) => unknown
   ): string | undefined => {
     const path = extractPath(selector)
     return errors[path.toLowerCase() as keyof TError<T>] as string | undefined
-  }, [errors])
-
-  const getArrayItemError = useCallback(<
-    K extends keyof T,
-    TItem = T[K] extends (infer U)[] ? U : never
-  >(
-    arraySelector: (obj: T) => T[K],
-    index: number,
-    itemSelector?: (item: TItem) => unknown
-  ): string | undefined => {
-    const arrayPath = extractPath(arraySelector)
-    const itemPath = itemSelector ? extractPath(itemSelector as (obj: TItem) => unknown) : ''
-    
-    const fullPath = itemPath
-      ? `${arrayPath}.${index}.${itemPath}`
-      : `${arrayPath}.${index}`
-    
-    return errors[fullPath.toLowerCase() as keyof TError<T>] as string | undefined
   }, [errors])
 
   const tryParseResponseErrors = useCallback(async (response: Response): Promise<void> => {
@@ -109,9 +98,8 @@ export function useFormErrors<T extends object>(): UseFormErrorsResult<T> {
   return useMemo(() => ({
     errors,
     getError,
-    getArrayItemError,
     tryParseResponseErrors,
     clearErrors
-  }), [errors, getError, getArrayItemError, tryParseResponseErrors, clearErrors])
+  }), [errors, getError, tryParseResponseErrors, clearErrors])
 }
 

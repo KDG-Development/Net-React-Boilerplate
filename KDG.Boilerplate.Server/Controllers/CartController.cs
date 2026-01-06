@@ -39,4 +39,13 @@ public class CartController : ApiControllerBase
         var cart = await _cartService.GetCartAsync(UserId);
         return Ok(cart);
     }
+
+    [HttpPost("checkout")]
+    public async Task<IActionResult> Checkout([FromBody] CheckoutRequest request)
+    {
+        // Validation handled by FluentValidation - if we get here, quantities are valid
+        // Real checkout logic will be added later
+        await _cartService.ReplaceCartAsync(UserId, []);
+        return Ok();
+    }
 }

@@ -2,10 +2,28 @@ import { useState } from "react";
 import { ActionButton, Enums, Icon, Image } from "kdg-react";
 import { Drawer } from "../../../../components/Drawer";
 import { useCartContext } from "../../../../context/CartContext";
+import { checkout } from "../../../../api/cart";
+import { useFormErrors } from "../../../../hooks/useFormErrors";
+
+type TCheckoutForm = {
+  items: { productId: string; quantity: number }[];
+};
 
 export const CartWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { cartItems, updateQuantity, removeItem, subtotal, itemCount } = useCartContext();
+  const { cartItems, updateQuantity, removeItem, clearCart, subtotal, itemCount } = useCartContext();
+  const { getError, tryParseResponseErrors } = useFormErrors<TCheckoutForm>();
+
+  const handleCheckout = async () => {
+    await checkout({
+      body: { items: cartItems.map((item) => ({ productId: item.id, quantity: item.quantity })) },
+      success: () => {
+        clearCart();
+        setIsOpen(false);
+      },
+      errorHandler: tryParseResponseErrors,
+    });
+  };
 
   return (
     <>
@@ -39,7 +57,7 @@ export const CartWidget = () => {
             <span className="fw-bold">${subtotal.toFixed(2)}</span>
           </div>
           <div className="d-grid gap-2">
-            <ActionButton onClick={() => {}} color={Enums.Color.Primary}>
+            <ActionButton onClick={handleCheckout} color={Enums.Color.Primary}>
               Checkout
             </ActionButton>
             <ActionButton onClick={() => setIsOpen(false)} variant="outline">
@@ -50,7 +68,10 @@ export const CartWidget = () => {
       )}
     >
       <div className="d-flex flex-column gap-3">
-        {cartItems.map((item) => (
+        {getError(e => e.items) && (
+          <div className="alert alert-danger mb-0">{getError(e => e.items)}</div>
+        )}
+        {cartItems.map((item, i) => (
           <div key={item.id} className="d-flex gap-3 border-bottom pb-3">
             <Image src={item.image?.src ?? ""} width={80} height={80} className="rounded" />
             <div className="flex-grow-1">
@@ -60,6 +81,9 @@ export const CartWidget = () => {
                 <span className="small">{item.quantity}</span>
                 <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => updateQuantity(item.id, 1)}>+</button>
               </div>
+              {getError(e => e.items[i].quantity) && (
+                <div className="text-danger small">{getError(e => e.items[i].quantity)}</div>
+              )}
               <div className="fw-bold">${(item.price * item.quantity).toFixed(2)}</div>
             </div>
             <button type="button" className="btn-close align-self-start" aria-label="Remove" onClick={() => removeItem(item.id)} />

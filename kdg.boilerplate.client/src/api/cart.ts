@@ -22,12 +22,25 @@ export const getCart = async (args: RequestMethodArgs<TCartItem[]>) => {
   });
 };
 
+type TReplaceCartRequest = { items: TCartItemRequest[] };
+
 export const replaceCart = async (args: PostRequestMethodArgs<TCartItemRequest[], TCartItem[]>) => {
-  await Api.Request.Post({
+  await Api.Request.Post<TReplaceCartRequest, TCartItem[]>({
     url: `${Api.BASE_URL}/cart`,
-    body: args.body,
+    body: { items: args.body },
     success: args.success,
     errorHandler: args.errorHandler,
     mapResult: mapCartResponse,
+  });
+};
+
+type TCheckoutRequest = { items: TCartItemRequest[] };
+
+export const checkout = async (args: PostRequestMethodArgs<TCheckoutRequest, {}>) => {
+  await Api.Request.Post({
+    url: `${Api.BASE_URL}/cart/checkout`,
+    body: args.body,
+    success: args.success,
+    errorHandler: args.errorHandler,
   });
 };
