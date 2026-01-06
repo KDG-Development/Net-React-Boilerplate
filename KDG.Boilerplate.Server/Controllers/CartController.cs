@@ -1,4 +1,5 @@
-using KDG.Boilerplate.Server.Models.Cart;
+using KDG.Boilerplate.Server.Models.Entities.Cart;
+using KDG.Boilerplate.Server.Models.Requests.Cart;
 using KDG.Boilerplate.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,8 +26,15 @@ public class CartController : ApiControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> ReplaceCart([FromBody] List<UserCartItem> items)
+    public async Task<IActionResult> ReplaceCart([FromBody] ReplaceCartRequest request)
     {
+        var items = request.Items.Select(i => new UserCartItem
+        {
+            UserId = UserId,
+            ProductId = i.ProductId,
+            Quantity = i.Quantity
+        }).ToList();
+
         await _cartService.ReplaceCartAsync(UserId, items);
         var cart = await _cartService.GetCartAsync(UserId);
         return Ok(cart);

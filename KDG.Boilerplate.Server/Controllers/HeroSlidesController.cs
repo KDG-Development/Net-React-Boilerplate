@@ -1,4 +1,4 @@
-using KDG.Boilerplate.Server.Models.Crm;
+using KDG.Boilerplate.Server.Models.Requests.HeroSlides;
 using KDG.Boilerplate.Services.Crm;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -55,7 +55,7 @@ public class HeroSlidesController : ApiControllerBase
         if (string.IsNullOrWhiteSpace(buttonUrl))
             return BadRequest("Button URL is required");
 
-        var dto = new CreateHeroSlideDto
+        var request = new CreateHeroSlideRequest
         {
             ButtonText = buttonText,
             ButtonUrl = buttonUrl,
@@ -68,7 +68,7 @@ public class HeroSlidesController : ApiControllerBase
             stream,
             image.FileName,
             image.ContentType,
-            dto);
+            request);
 
         _logger.LogInformation("User {UserId} created hero slide {SlideId}", UserId, slide.Id);
         
@@ -77,9 +77,9 @@ public class HeroSlidesController : ApiControllerBase
 
     [HttpPut("{id:guid}")]
     [Authorize]
-    public async Task<IActionResult> UpdateSlide(Guid id, [FromBody] UpdateHeroSlideDto dto)
+    public async Task<IActionResult> UpdateSlide(Guid id, [FromBody] UpdateHeroSlideRequest request)
     {
-        var slide = await _heroSlidesService.UpdateSlideAsync(id, dto);
+        var slide = await _heroSlidesService.UpdateSlideAsync(id, request);
         if (slide == null)
             return NotFound();
 
@@ -125,13 +125,12 @@ public class HeroSlidesController : ApiControllerBase
 
     [HttpPut("reorder")]
     [Authorize]
-    public async Task<IActionResult> ReorderSlides([FromBody] ReorderHeroSlidesDto dto)
+    public async Task<IActionResult> ReorderSlides([FromBody] ReorderHeroSlidesRequest request)
     {
-        await _heroSlidesService.ReorderSlidesAsync(dto.SlideIds);
+        await _heroSlidesService.ReorderSlidesAsync(request.SlideIds);
         
-        _logger.LogInformation("User {UserId} reordered {Count} hero slides", UserId, dto.SlideIds.Count);
+        _logger.LogInformation("User {UserId} reordered {Count} hero slides", UserId, request.SlideIds.Count);
         
         return Ok(new { });
     }
 }
-

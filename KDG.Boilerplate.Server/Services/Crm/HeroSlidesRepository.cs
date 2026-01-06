@@ -1,4 +1,5 @@
-using KDG.Boilerplate.Server.Models.Crm;
+using KDG.Boilerplate.Server.Models.Entities.Crm;
+using KDG.Boilerplate.Server.Models.Requests.HeroSlides;
 using Npgsql;
 using Dapper;
 
@@ -9,7 +10,7 @@ public interface IHeroSlidesRepository
     Task<List<HeroSlide>> GetAllAsync(NpgsqlConnection conn, HeroSlideFilters? filters = null);
     Task<HeroSlide?> GetByIdAsync(NpgsqlConnection conn, Guid id);
     Task<HeroSlide> CreateAsync(NpgsqlTransaction t, HeroSlide slide);
-    Task<HeroSlide?> UpdateAsync(NpgsqlTransaction t, Guid id, UpdateHeroSlideDto dto);
+    Task<HeroSlide?> UpdateAsync(NpgsqlTransaction t, Guid id, string? buttonText, string? buttonUrl, int? sortOrder, bool? isActive);
     Task<HeroSlide?> UpdateImageUrlAsync(NpgsqlTransaction t, Guid id, string imageUrl);
     Task<bool> DeleteAsync(NpgsqlTransaction t, Guid id);
     Task ReorderAsync(NpgsqlTransaction t, List<Guid> slideIds);
@@ -66,16 +67,16 @@ public class HeroSlidesRepository : IHeroSlidesRepository
         return await t.Connection!.QuerySingleAsync<HeroSlide>(sql, slide, t);
     }
 
-    public async Task<HeroSlide?> UpdateAsync(NpgsqlTransaction t, Guid id, UpdateHeroSlideDto dto)
+    public async Task<HeroSlide?> UpdateAsync(NpgsqlTransaction t, Guid id, string? buttonText, string? buttonUrl, int? sortOrder, bool? isActive)
     {
         var updates = new List<string>();
         var parameters = new DynamicParameters();
         parameters.Add("Id", id);
 
-        if (dto.ButtonText != null) { updates.Add("button_text = @ButtonText"); parameters.Add("ButtonText", dto.ButtonText); }
-        if (dto.ButtonUrl != null) { updates.Add("button_url = @ButtonUrl"); parameters.Add("ButtonUrl", dto.ButtonUrl); }
-        if (dto.SortOrder.HasValue) { updates.Add("sort_order = @SortOrder"); parameters.Add("SortOrder", dto.SortOrder.Value); }
-        if (dto.IsActive.HasValue) { updates.Add("is_active = @IsActive"); parameters.Add("IsActive", dto.IsActive.Value); }
+        if (buttonText != null) { updates.Add("button_text = @ButtonText"); parameters.Add("ButtonText", buttonText); }
+        if (buttonUrl != null) { updates.Add("button_url = @ButtonUrl"); parameters.Add("ButtonUrl", buttonUrl); }
+        if (sortOrder.HasValue) { updates.Add("sort_order = @SortOrder"); parameters.Add("SortOrder", sortOrder.Value); }
+        if (isActive.HasValue) { updates.Add("is_active = @IsActive"); parameters.Add("IsActive", isActive.Value); }
 
         if (updates.Count == 0) return await GetByIdAsync(t.Connection!, id);
 

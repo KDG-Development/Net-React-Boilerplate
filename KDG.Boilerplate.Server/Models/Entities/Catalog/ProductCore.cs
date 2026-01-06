@@ -1,4 +1,4 @@
-namespace KDG.Boilerplate.Server.Models.Catalog;
+namespace KDG.Boilerplate.Server.Models.Entities.Catalog;
 
 /// <summary>
 /// Base class containing core product properties shared across all product representations.

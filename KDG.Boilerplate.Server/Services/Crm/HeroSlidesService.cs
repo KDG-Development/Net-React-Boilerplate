@@ -1,4 +1,5 @@
-using KDG.Boilerplate.Server.Models.Crm;
+using KDG.Boilerplate.Server.Models.Entities.Crm;
+using KDG.Boilerplate.Server.Models.Requests.HeroSlides;
 using KDG.Database.Interfaces;
 using Npgsql;
 
@@ -8,8 +9,8 @@ public interface IHeroSlidesService
 {
     Task<List<HeroSlide>> GetSlidesAsync(HeroSlideFilters? filters = null);
     Task<HeroSlide?> GetSlideByIdAsync(Guid id);
-    Task<HeroSlide> CreateSlideAsync(Stream imageStream, string fileName, string contentType, CreateHeroSlideDto dto);
-    Task<HeroSlide?> UpdateSlideAsync(Guid id, UpdateHeroSlideDto dto);
+    Task<HeroSlide> CreateSlideAsync(Stream imageStream, string fileName, string contentType, CreateHeroSlideRequest request);
+    Task<HeroSlide?> UpdateSlideAsync(Guid id, UpdateHeroSlideRequest request);
     Task<HeroSlide?> UpdateSlideImageAsync(Guid id, Stream imageStream, string fileName, string contentType);
     Task<bool> DeleteSlideAsync(Guid id);
     Task ReorderSlidesAsync(List<Guid> slideIds);
@@ -46,22 +47,22 @@ public class HeroSlidesService : IHeroSlidesService
             await _repository.GetByIdAsync(conn, id));
     }
 
-    public async Task<HeroSlide> CreateSlideAsync(Stream imageStream, string fileName, string contentType, CreateHeroSlideDto dto)
+    public async Task<HeroSlide> CreateSlideAsync(Stream imageStream, string fileName, string contentType, CreateHeroSlideRequest request)
     {
         var imageUrl = await _blobStorageService.UploadAsync(imageStream, fileName, contentType);
 
         return await _database.WithTransaction(async t =>
         {
-            var sortOrder = dto.SortOrder > 0 ? dto.SortOrder : await _repository.GetNextSortOrderAsync(t.Connection!);
+            var sortOrder = request.SortOrder > 0 ? request.SortOrder : await _repository.GetNextSortOrderAsync(t.Connection!);
 
             var slide = new HeroSlide
             {
                 Id = Guid.NewGuid(),
                 ImageUrl = imageUrl,
-                ButtonText = dto.ButtonText,
-                ButtonUrl = dto.ButtonUrl,
+                ButtonText = request.ButtonText,
+                ButtonUrl = request.ButtonUrl,
                 SortOrder = sortOrder,
-                IsActive = dto.IsActive
+                IsActive = request.IsActive
             };
 
             var created = await _repository.CreateAsync(t, slide);
@@ -71,11 +72,11 @@ public class HeroSlidesService : IHeroSlidesService
         });
     }
 
-    public async Task<HeroSlide?> UpdateSlideAsync(Guid id, UpdateHeroSlideDto dto)
+    public async Task<HeroSlide?> UpdateSlideAsync(Guid id, UpdateHeroSlideRequest request)
     {
         return await _database.WithTransaction(async t =>
         {
-            var updated = await _repository.UpdateAsync(t, id, dto);
+            var updated = await _repository.UpdateAsync(t, id, request.ButtonText, request.ButtonUrl, request.SortOrder, request.IsActive);
             if (updated != null)
             {
                 _logger.LogInformation("Updated hero slide {SlideId}", id);

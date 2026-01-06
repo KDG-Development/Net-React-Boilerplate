@@ -1,5 +1,5 @@
-using KDG.Boilerplate.Server.Models.Catalog;
-using KDG.Boilerplate.Server.Models.Common;
+using KDG.Boilerplate.Server.Models.Entities.Catalog;
+using KDG.Boilerplate.Server.Models.Requests.Products;
 using Npgsql;
 using Dapper;
 
@@ -13,7 +13,7 @@ public interface IProductRepository
         int limit,
         Guid userId,
         Guid? categoryId = null,
-        ProductFilterParams? filters = null);
+        ProductFilters? filters = null);
     Task<(Product Product, bool IsFavorite)?> GetCatalogProductByIdAsync(NpgsqlConnection conn, Guid id, Guid userId);
     Task<List<ProductMeta>> GetMetaByIdsAsync(NpgsqlConnection conn, Guid[] ids);
 }
@@ -26,7 +26,7 @@ public class ProductRepository : IProductRepository
         int limit,
         Guid userId,
         Guid? categoryId = null,
-        ProductFilterParams? filters = null)
+        ProductFilters? filters = null)
     {
         var conditions = new List<string>();
         

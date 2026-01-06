@@ -1,4 +1,4 @@
-namespace KDG.Boilerplate.Server.Models.Catalog;
+namespace KDG.Boilerplate.Server.Models.Entities.Catalog;
 
 public class ProductImage
 {

@@ -1,9 +1,9 @@
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 
-namespace KDG.Boilerplate.Server.Models.Common;
+namespace KDG.Boilerplate.Server.Models.Requests.Products;
 
-public class ProductFilterParams
+public class ProductFilters
 {
     public const string MinPriceParam = "minPrice";
     public const string MaxPriceParam = "maxPrice";
@@ -27,7 +27,7 @@ public class ProductFilterParams
 
     /// <summary>
     /// Returns the search term formatted for PostgreSQL tsquery with prefix matching.
-    /// Example: "laptop bag" becomes "laptop:* & bag:*"
+    /// Example: "laptop bag" becomes "laptop:* &amp; bag:*"
     /// </summary>
     public string? GetSearchQuery()
     {

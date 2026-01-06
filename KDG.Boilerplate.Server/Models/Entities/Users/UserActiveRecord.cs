@@ -1,7 +1,4 @@
-using System;
-using KDG.UserManagement.Interfaces;
-
-namespace KDG.Boilerplate.Server.Models.ActiveRecords;
+namespace KDG.Boilerplate.Server.Models.Entities.Users;
 
 public record UserActiveRecord
 {

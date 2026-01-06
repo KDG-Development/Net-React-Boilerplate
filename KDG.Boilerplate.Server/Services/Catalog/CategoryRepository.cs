@@ -1,4 +1,4 @@
-using KDG.Boilerplate.Server.Models.Catalog;
+using KDG.Boilerplate.Server.Models.Entities.Catalog;
 using Npgsql;
 using Dapper;
 

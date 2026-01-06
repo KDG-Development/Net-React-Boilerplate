@@ -1,5 +1,5 @@
 using KDG.Boilerplate.Middleware.Auth;
-using KDG.Boilerplate.Models.DTO;
+using KDG.Boilerplate.Server.Models.Requests.Auth;
 using KDG.Boilerplate.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -23,9 +23,9 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] UserAuth loginRequest)
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        var user = await _userService.UserLoginAsync(loginRequest);
+        var user = await _userService.UserLoginAsync(request);
 
         if (user == null)
         {

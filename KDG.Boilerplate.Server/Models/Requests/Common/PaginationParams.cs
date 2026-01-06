@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace KDG.Boilerplate.Server.Models.Common;
+namespace KDG.Boilerplate.Server.Models.Requests.Common;
 
 public class PaginationParams
 {

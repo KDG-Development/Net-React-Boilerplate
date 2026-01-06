@@ -1,4 +1,4 @@
-namespace KDG.Boilerplate.Server.Models.Organizations;
+namespace KDG.Boilerplate.Server.Models.Entities.Organizations;
 
 public class OrganizationMeta
 {

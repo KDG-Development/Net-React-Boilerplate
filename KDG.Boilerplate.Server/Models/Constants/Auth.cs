@@ -1,15 +1,15 @@
-namespace KDG.Boilerplate.Models.Auth
+namespace KDG.Boilerplate.Server.Models.Constants;
+
+public static class Permissions
 {
-  public static class Permissions
-  {
     public const string CreateUser = "add-user";
     public const string EditUser = "edit-user";
-  }
+}
 
-  public static class PermissionGroups
-  {
+public static class PermissionGroups
+{
     public const string SystemAdmin = "system-admin";
     public const string CustomerAdmin = "customer-admin";
     public const string CustomerUser = "customer-user";
-  }
 }
+

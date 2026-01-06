@@ -1,4 +1,4 @@
-using KDG.Boilerplate.Server.Models.Users;
+using KDG.Boilerplate.Server.Models.Entities.Users;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 

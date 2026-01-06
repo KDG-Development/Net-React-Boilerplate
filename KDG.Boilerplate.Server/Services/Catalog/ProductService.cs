@@ -1,5 +1,7 @@
-using KDG.Boilerplate.Server.Models.Catalog;
+using KDG.Boilerplate.Server.Models.Entities.Catalog;
 using KDG.Boilerplate.Server.Models.Common;
+using KDG.Boilerplate.Server.Models.Requests.Common;
+using KDG.Boilerplate.Server.Models.Requests.Products;
 using KDG.Database.Interfaces;
 using Npgsql;
 
@@ -11,7 +13,7 @@ public interface IProductService
         Guid userId,
         PaginationParams pagination,
         Guid? categoryId = null,
-        ProductFilterParams? filters = null);
+        ProductFilters? filters = null);
     Task<CatalogProductDetail?> GetCatalogProductByIdAsync(Guid id, Guid userId);
 }
 
@@ -35,7 +37,7 @@ public class ProductService : IProductService
         Guid userId,
         PaginationParams pagination,
         Guid? categoryId = null,
-        ProductFilterParams? filters = null)
+        ProductFilters? filters = null)
     {
         var (products, totalCount) = await _database.WithConnection(async conn =>
             await _productRepository.GetCatalogProductsAsync(

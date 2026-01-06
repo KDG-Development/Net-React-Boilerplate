@@ -1,4 +1,4 @@
-using KDG.Boilerplate.Server.Models.Cart;
+using KDG.Boilerplate.Server.Models.Entities.Cart;
 using KDG.Database.Interfaces;
 using Npgsql;
 

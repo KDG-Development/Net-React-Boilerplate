@@ -1,4 +1,5 @@
-using KDG.Boilerplate.Server.Models.Common;
+using KDG.Boilerplate.Server.Models.Requests.Common;
+using KDG.Boilerplate.Server.Models.Requests.Products;
 using KDG.Boilerplate.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,7 +22,7 @@ public class ProductsController : ApiControllerBase
     public async Task<IActionResult> GetProducts(
         [FromQuery] Guid? categoryId,
         [FromQuery] PaginationParams pagination,
-        [FromQuery] ProductFilterParams filters)
+        [FromQuery] ProductFilters filters)
     {
         var products = await _productService.GetCatalogProductsAsync(UserId, pagination, categoryId, filters);
         return Ok(products);
@@ -36,4 +37,3 @@ public class ProductsController : ApiControllerBase
         return Ok(product);
     }
 }
-

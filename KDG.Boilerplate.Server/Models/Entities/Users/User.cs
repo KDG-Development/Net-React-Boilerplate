@@ -1,10 +1,7 @@
-using System;
-using System.Collections.Generic;
-using KDG.UserManagement.Interfaces;
 using KDG.UserManagement.Models;
-using KDG.Boilerplate.Server.Models.Organizations;
+using KDG.Boilerplate.Server.Models.Entities.Organizations;
 
-namespace KDG.Boilerplate.Server.Models.Users;
+namespace KDG.Boilerplate.Server.Models.Entities.Users;
 
 public class User : UserBase
 {
@@ -26,3 +23,4 @@ public class User : UserBase
         Email = email;
     }
 }
+

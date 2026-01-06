@@ -1,9 +1,7 @@
-namespace KDG.Boilerplate.Server.Models.Crm;
+namespace KDG.Boilerplate.Server.Models.Requests.HeroSlides;
 
-public class HeroSlide
+public class CreateHeroSlideRequest
 {
-    public Guid Id { get; set; }
-    public string ImageUrl { get; set; } = string.Empty;
     public string ButtonText { get; set; } = string.Empty;
     public string ButtonUrl { get; set; } = string.Empty;
     public int SortOrder { get; set; }

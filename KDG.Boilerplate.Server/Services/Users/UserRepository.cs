@@ -1,4 +1,4 @@
-using KDG.Boilerplate.Server.Models.ActiveRecords;
+using KDG.Boilerplate.Server.Models.Entities.Users;
 using Npgsql;
 using Dapper;
 

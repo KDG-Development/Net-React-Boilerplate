@@ -1,4 +1,4 @@
-namespace KDG.Boilerplate.Server.Models.Catalog;
+namespace KDG.Boilerplate.Server.Models.Entities.Catalog;
 
 /// <summary>
 /// Base DTO for products in the catalog context (user-facing endpoints).

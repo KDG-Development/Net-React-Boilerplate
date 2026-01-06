@@ -1,6 +1,6 @@
-using KDG.Boilerplate.Models.DTO;
-using KDG.Boilerplate.Server.Models.Organizations;
-using KDG.Boilerplate.Server.Models.Users;
+using KDG.Boilerplate.Server.Models.Requests.Auth;
+using KDG.Boilerplate.Server.Models.Entities.Organizations;
+using KDG.Boilerplate.Server.Models.Entities.Users;
 using KDG.Database.Interfaces;
 using KDG.UserManagement.Models;
 using Npgsql;
@@ -9,7 +9,7 @@ namespace KDG.Boilerplate.Services;
 
 public interface IUserService
 {
-    Task<User?> UserLoginAsync(UserAuth authPayload);
+    Task<User?> UserLoginAsync(LoginRequest request);
 }
 
 public class UserService : IUserService
@@ -28,25 +28,25 @@ public class UserService : IUserService
         _logger = logger;
     }
 
-    public async Task<User?> UserLoginAsync(UserAuth authPayload)
+    public async Task<User?> UserLoginAsync(LoginRequest request)
     {
         return await _database.WithConnection(async conn =>
         {
-            var passwordHash = await _userRepository.GetPasswordHashAsync(conn, authPayload.Email);
+            var passwordHash = await _userRepository.GetPasswordHashAsync(conn, request.Email);
 
             if (passwordHash == null)
             {
-                _logger.LogWarning("Login attempt for non-existent user: {Email}", authPayload.Email);
+                _logger.LogWarning("Login attempt for non-existent user: {Email}", request.Email);
                 return null;
             }
 
-            if (!BCrypt.Net.BCrypt.Verify(authPayload.Password, passwordHash))
+            if (!BCrypt.Net.BCrypt.Verify(request.Password, passwordHash))
             {
-                _logger.LogWarning("Invalid password attempt for user: {Email}", authPayload.Email);
+                _logger.LogWarning("Invalid password attempt for user: {Email}", request.Email);
                 return null;
             }
 
-            var result = await _userRepository.GetUserWithPermissionsAsync(conn, authPayload.Email);
+            var result = await _userRepository.GetUserWithPermissionsAsync(conn, request.Email);
 
             if (result == null) return null;
 
@@ -69,4 +69,3 @@ public class UserService : IUserService
         });
     }
 }
-
