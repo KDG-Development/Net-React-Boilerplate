@@ -7,6 +7,7 @@ public static class ServicesConfiguration
 {
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
+        services.AddScoped<IUserService, UserService>();
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IProductService, ProductService>();
         services.AddScoped<ICartService, CartService>();
@@ -16,4 +17,3 @@ public static class ServicesConfiguration
         return services;
     }
 }
-

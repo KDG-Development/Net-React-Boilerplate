@@ -1,88 +1,50 @@
 using KDG.Boilerplate.Server.Models.Cart;
-using KDG.Database.Interfaces;
+using Npgsql;
 using Dapper;
 
 namespace KDG.Boilerplate.Services;
 
 public interface ICartRepository
 {
-    Task<List<CartProduct>> GetCartAsync(Guid userId);
-    Task ReplaceCartAsync(Guid userId, List<UserCartItem> items);
+    Task<List<UserCartItem>> GetCartItemsAsync(NpgsqlConnection conn, Guid userId);
+    Task ReplaceCartAsync(NpgsqlTransaction t, Guid userId, List<UserCartItem> items);
 }
 
 public class CartRepository : ICartRepository
 {
-    private readonly IDatabase<Npgsql.NpgsqlConnection, Npgsql.NpgsqlTransaction> _database;
-    private readonly IProductRepository _productRepository;
-
-    public CartRepository(
-        IDatabase<Npgsql.NpgsqlConnection, Npgsql.NpgsqlTransaction> database,
-        IProductRepository productRepository)
+    public async Task<List<UserCartItem>> GetCartItemsAsync(NpgsqlConnection conn, Guid userId)
     {
-        _database = database;
-        _productRepository = productRepository;
+        var sql = @"
+            SELECT product_id AS ProductId, quantity AS Quantity
+            FROM user_cart_items
+            WHERE user_id = @UserId";
+
+        return (await conn.QueryAsync<UserCartItem>(sql, new { UserId = userId })).ToList();
     }
 
-    public async Task<List<CartProduct>> GetCartAsync(Guid userId)
+    public async Task ReplaceCartAsync(NpgsqlTransaction t, Guid userId, List<UserCartItem> items)
     {
-        var cartItems = await _database.WithConnection(async connection =>
+        await t.Connection!.ExecuteAsync(
+            "DELETE FROM user_cart_items WHERE user_id = @UserId",
+            new { UserId = userId },
+            t
+        );
+
+        if (items.Count > 0)
         {
             var sql = @"
-                SELECT product_id AS ProductId, quantity AS Quantity
-                FROM user_cart_items
-                WHERE user_id = @UserId";
+                INSERT INTO user_cart_items (user_id, product_id, quantity)
+                VALUES (@UserId, @ProductId, @Quantity)";
 
-            return (await connection.QueryAsync<UserCartItem>(sql, new { UserId = userId })).ToList();
-        });
-
-        if (cartItems.Count == 0)
-            return [];
-
-        var productIds = cartItems.Select(i => i.ProductId).ToArray();
-        var products = await _productRepository.GetMetaByIdsAsync(productIds);
-        var productsById = products.ToDictionary(p => p.Id);
-
-        return cartItems
-            .Where(i => productsById.ContainsKey(i.ProductId))
-            .Select(i => new CartProduct
+            foreach (var item in items)
             {
-                Product = productsById[i.ProductId],
-                Quantity = i.Quantity
-            })
-            .ToList();
-    }
-
-    public async Task ReplaceCartAsync(Guid userId, List<UserCartItem> items)
-    {
-        await _database.WithConnection(async connection =>
-        {
-            using var transaction = await connection.BeginTransactionAsync();
-            
-            await connection.ExecuteAsync(
-                "DELETE FROM user_cart_items WHERE user_id = @UserId",
-                new { UserId = userId },
-                transaction
-            );
-
-            if (items.Count > 0)
-            {
-                var sql = @"
-                    INSERT INTO user_cart_items (user_id, product_id, quantity)
-                    VALUES (@UserId, @ProductId, @Quantity)";
-
-                foreach (var item in items)
+                await t.Connection!.ExecuteAsync(sql, new
                 {
-                    await connection.ExecuteAsync(sql, new
-                    {
-                        UserId = userId,
-                        ProductId = item.ProductId,
-                        Quantity = item.Quantity
-                    }, transaction);
-                }
+                    UserId = userId,
+                    ProductId = item.ProductId,
+                    Quantity = item.Quantity
+                }, t);
             }
-
-            await transaction.CommitAsync();
-            return 0;
-        });
+        }
     }
 }

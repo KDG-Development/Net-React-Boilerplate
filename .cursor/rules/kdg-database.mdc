@@ -1,0 +1,12 @@
+---
+description: Standards for KDG.Database repository and service patterns
+globs: *.cs
+---
+- services own connection/transaction lifecycle, not repositories
+- inject IDatabase<NpgsqlConnection, NpgsqlTransaction> into services, not repositories
+- repository methods accept NpgsqlConnection (reads) or NpgsqlTransaction (writes) as first parameter
+- wrap read operations in _database.WithConnection()
+- wrap write operations (insert/update/delete) in _database.WithTransaction()
+- use KDG.Database DML methods: PostgreSQL.Insert<T>(), PostgreSQL.Update<T>(), PostgreSQL.Upsert<T>(), PostgreSQL.Delete<T>()
+- repositories should be stateless - no IDatabase dependency
+- for multi-step operations needing both reads and writes, use WithTransaction and access connection via transaction.Connection

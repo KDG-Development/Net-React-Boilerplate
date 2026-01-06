@@ -1,62 +1,43 @@
-using KDG.Database.Interfaces;
+using Npgsql;
 using Dapper;
 
 namespace KDG.Boilerplate.Services;
 
 public interface IFavoritesRepository
 {
-    Task AddFavoriteAsync(Guid userId, Guid productId);
-    Task RemoveFavoriteAsync(Guid userId, Guid productId);
-    Task<bool> UserHasOrganizationAsync(Guid userId);
+    Task AddFavoriteAsync(NpgsqlTransaction t, Guid userId, Guid productId);
+    Task RemoveFavoriteAsync(NpgsqlTransaction t, Guid userId, Guid productId);
+    Task<bool> UserHasOrganizationAsync(NpgsqlConnection conn, Guid userId);
 }
 
 public class FavoritesRepository : IFavoritesRepository
 {
-    private readonly IDatabase<Npgsql.NpgsqlConnection, Npgsql.NpgsqlTransaction> _database;
-
-    public FavoritesRepository(IDatabase<Npgsql.NpgsqlConnection, Npgsql.NpgsqlTransaction> database)
+    public async Task AddFavoriteAsync(NpgsqlTransaction t, Guid userId, Guid productId)
     {
-        _database = database;
+        var sql = @"
+            INSERT INTO organization_favorites (organization_id, product_id)
+            SELECT u.organization_id, @ProductId
+            FROM users u
+            WHERE u.id = @UserId AND u.organization_id IS NOT NULL
+            ON CONFLICT (organization_id, product_id) DO NOTHING";
+
+        await t.Connection!.ExecuteAsync(sql, new { UserId = userId, ProductId = productId }, t);
     }
 
-    public async Task AddFavoriteAsync(Guid userId, Guid productId)
+    public async Task RemoveFavoriteAsync(NpgsqlTransaction t, Guid userId, Guid productId)
     {
-        await _database.WithConnection(async connection =>
-        {
-            var sql = @"
-                INSERT INTO organization_favorites (organization_id, product_id)
-                SELECT u.organization_id, @ProductId
-                FROM users u
-                WHERE u.id = @UserId AND u.organization_id IS NOT NULL
-                ON CONFLICT (organization_id, product_id) DO NOTHING";
+        var sql = @"
+            DELETE FROM organization_favorites
+            WHERE product_id = @ProductId
+            AND organization_id = (SELECT organization_id FROM users WHERE id = @UserId)";
 
-            await connection.ExecuteAsync(sql, new { UserId = userId, ProductId = productId });
-            return 0;
-        });
+        await t.Connection!.ExecuteAsync(sql, new { UserId = userId, ProductId = productId }, t);
     }
 
-    public async Task RemoveFavoriteAsync(Guid userId, Guid productId)
+    public async Task<bool> UserHasOrganizationAsync(NpgsqlConnection conn, Guid userId)
     {
-        await _database.WithConnection(async connection =>
-        {
-            var sql = @"
-                DELETE FROM organization_favorites
-                WHERE product_id = @ProductId
-                AND organization_id = (SELECT organization_id FROM users WHERE id = @UserId)";
-
-            await connection.ExecuteAsync(sql, new { UserId = userId, ProductId = productId });
-            return 0;
-        });
-    }
-
-    public async Task<bool> UserHasOrganizationAsync(Guid userId)
-    {
-        return await _database.WithConnection(async connection =>
-        {
-            var sql = "SELECT organization_id FROM users WHERE id = @UserId";
-            var orgId = await connection.QueryFirstOrDefaultAsync<Guid?>(sql, new { UserId = userId });
-            return orgId.HasValue;
-        });
+        var sql = "SELECT organization_id FROM users WHERE id = @UserId";
+        var orgId = await conn.QueryFirstOrDefaultAsync<Guid?>(sql, new { UserId = userId });
+        return orgId.HasValue;
     }
 }
-

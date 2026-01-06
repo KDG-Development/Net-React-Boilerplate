@@ -1,7 +1,4 @@
-using KDG.Boilerplate.Middleware.Auth;
-using KDG.Boilerplate.Models.DTO;
 using KDG.Boilerplate.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KDG.Boilerplate.Server.Controllers;
@@ -10,16 +7,16 @@ namespace KDG.Boilerplate.Server.Controllers;
 [Route("/api/[controller]")]
 public class HealthController : ControllerBase
 {
-    private readonly IUserRepository _userRepository;
+    private readonly IUserService _userService;
     private readonly IAuthService _authService;
 
     public HealthController(
-        IUserRepository userRepository,
+        IUserService userService,
         IAuthService authService
     )
     {
         // we want to register services so that health check includes services health
-        _userRepository = userRepository;
+        _userService = userService;
         _authService = authService;
     }
 

@@ -1,3 +1,6 @@
+using KDG.Database.Interfaces;
+using Npgsql;
+
 namespace KDG.Boilerplate.Services;
 
 public class FavoritesOperationResult
@@ -17,31 +20,48 @@ public interface IFavoritesService
 
 public class FavoritesService : IFavoritesService
 {
+    private readonly IDatabase<NpgsqlConnection, NpgsqlTransaction> _database;
     private readonly IFavoritesRepository _favoritesRepository;
 
-    public FavoritesService(IFavoritesRepository favoritesRepository)
+    public FavoritesService(
+        IDatabase<NpgsqlConnection, NpgsqlTransaction> database,
+        IFavoritesRepository favoritesRepository)
     {
+        _database = database;
         _favoritesRepository = favoritesRepository;
     }
 
     public async Task<FavoritesOperationResult> AddFavoriteAsync(Guid userId, Guid productId)
     {
-        var hasOrg = await _favoritesRepository.UserHasOrganizationAsync(userId);
+        var hasOrg = await _database.WithConnection(async conn =>
+            await _favoritesRepository.UserHasOrganizationAsync(conn, userId));
+
         if (!hasOrg)
             return FavoritesOperationResult.Fail("User does not belong to an organization");
 
-        await _favoritesRepository.AddFavoriteAsync(userId, productId);
+        await _database.WithTransaction(async t =>
+        {
+            await _favoritesRepository.AddFavoriteAsync(t, userId, productId);
+            return true;
+        });
+
         return FavoritesOperationResult.Ok();
     }
 
     public async Task<FavoritesOperationResult> RemoveFavoriteAsync(Guid userId, Guid productId)
     {
-        var hasOrg = await _favoritesRepository.UserHasOrganizationAsync(userId);
+        var hasOrg = await _database.WithConnection(async conn =>
+            await _favoritesRepository.UserHasOrganizationAsync(conn, userId));
+
         if (!hasOrg)
             return FavoritesOperationResult.Fail("User does not belong to an organization");
 
-        await _favoritesRepository.RemoveFavoriteAsync(userId, productId);
+        await _database.WithTransaction(async t =>
+        {
+            await _favoritesRepository.RemoveFavoriteAsync(t, userId, productId);
+            return true;
+        });
+
         return FavoritesOperationResult.Ok();
     }
 }
-

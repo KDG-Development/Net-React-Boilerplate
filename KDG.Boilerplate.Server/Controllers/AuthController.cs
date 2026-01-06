@@ -10,22 +10,22 @@ namespace KDG.Boilerplate.Server.Controllers;
 [Route("/api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private readonly IUserRepository _userRepository;
+    private readonly IUserService _userService;
     private readonly IAuthService _authService;
 
     public AuthController(
-        IUserRepository userRepository,
+        IUserService userService,
         IAuthService authService
     )
     {
-        _userRepository = userRepository;
+        _userService = userService;
         _authService = authService;
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] UserAuth loginRequest)
     {
-        var user = await _userRepository.UserLogin(loginRequest);
+        var user = await _userService.UserLoginAsync(loginRequest);
 
         if (user == null)
         {
@@ -33,15 +33,17 @@ public class AuthController : ControllerBase
         }
 
         var token = _authService.GenerateToken(user);
-        AuthHandler.Login(this.HttpContext,token);
+        AuthHandler.Login(this.HttpContext, token);
         return Ok(token);
     }
+
     [HttpGet]
     [Authorize]
     public IActionResult Auth()
     {
         return Ok("authorized");
     }
+
     [HttpPost("logout")]
     public IActionResult Logout()
     {

@@ -1,4 +1,6 @@
 using KDG.Boilerplate.Server.Models.Catalog;
+using KDG.Database.Interfaces;
+using Npgsql;
 
 namespace KDG.Boilerplate.Services;
 
@@ -10,45 +12,53 @@ public interface ICategoryService
 
 public class CategoryService : ICategoryService
 {
+    private readonly IDatabase<NpgsqlConnection, NpgsqlTransaction> _database;
     private readonly ICategoryRepository _categoryRepository;
 
-    public CategoryService(ICategoryRepository categoryRepository)
+    public CategoryService(
+        IDatabase<NpgsqlConnection, NpgsqlTransaction> database,
+        ICategoryRepository categoryRepository)
     {
+        _database = database;
         _categoryRepository = categoryRepository;
     }
 
     public async Task<Dictionary<string, CategoryNode>> GetCategoriesAsync()
     {
-        var categories = await _categoryRepository.GetAllAsync();
+        var categories = await _database.WithConnection(async conn =>
+            await _categoryRepository.GetAllAsync(conn));
         return BuildCategoryTree(categories);
     }
 
     public async Task<CategoryDetailResponse?> GetCategoryByPathAsync(string path)
     {
-        var category = await _categoryRepository.GetByPathAsync(path);
-        if (category == null) return null;
-
-        var ancestors = await _categoryRepository.GetAncestorsAsync(category.Id);
-        var children = await _categoryRepository.GetChildrenAsync(category.Id);
-
-        return new CategoryDetailResponse
+        return await _database.WithConnection(async conn =>
         {
-            Id = category.Id,
-            Name = category.Name,
-            Slug = GetSlug(category.FullPath),
-            Breadcrumbs = ancestors.Select(a => new CategoryBreadcrumb
+            var category = await _categoryRepository.GetByPathAsync(conn, path);
+            if (category == null) return null;
+
+            var ancestors = await _categoryRepository.GetAncestorsAsync(conn, category.Id);
+            var children = await _categoryRepository.GetChildrenAsync(conn, category.Id);
+
+            return new CategoryDetailResponse
             {
-                Id = a.Id,
-                Name = a.Name,
-                Slug = GetSlug(a.FullPath)
-            }).ToList(),
-            Subcategories = children.Select(c => new SubcategoryInfo
-            {
-                Id = c.Id,
-                Name = c.Name,
-                Slug = GetSlug(c.FullPath)
-            }).ToList()
-        };
+                Id = category.Id,
+                Name = category.Name,
+                Slug = GetSlug(category.FullPath),
+                Breadcrumbs = ancestors.Select(a => new CategoryBreadcrumb
+                {
+                    Id = a.Id,
+                    Name = a.Name,
+                    Slug = GetSlug(a.FullPath)
+                }).ToList(),
+                Subcategories = children.Select(c => new SubcategoryInfo
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    Slug = GetSlug(c.FullPath)
+                }).ToList()
+            };
+        });
     }
 
     private static string GetSlug(string fullPath)
@@ -95,4 +105,3 @@ public class CategoryService : ICategoryService
         return node;
     }
 }
-
