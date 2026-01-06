@@ -32,17 +32,8 @@ export const createHeroSlide = async (args: PostRequestMethodArgs<TCreateHeroSli
 }
 
 export const updateHeroSlide = async (args: PostRequestMethodArgs<TUpdateHeroSlideDto, THeroSlide> & { id: string }) => {
-  await Api.Request.Put({
-    url: `${Api.BASE_URL}/heroslides/${args.id}`,
-    body: args.body,
-    success: args.success,
-    errorHandler: args.errorHandler,
-  })
-}
-
-export const updateHeroSlideImage = async (args: PostRequestMethodArgs<FormData, THeroSlide> & { id: string }) => {
   await Api.Request.PutForm({
-    url: `${Api.BASE_URL}/heroslides/${args.id}/image`,
+    url: `${Api.BASE_URL}/heroslides/${args.id}`,
     body: args.body,
     success: args.success,
     errorHandler: args.errorHandler,

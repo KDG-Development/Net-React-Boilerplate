@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ActionButton, TextInput, Radio, Row, Col, Conditional, AsyncButton, Enums, Clickable, FileInput } from 'kdg-react'
 import { THeroSlide } from '../../../types/crm/heroSlide'
-import { createHeroSlide, updateHeroSlide, updateHeroSlideImage } from '../../../api/crm/heroSlides'
+import { createHeroSlide, updateHeroSlide } from '../../../api/crm/heroSlides'
 import { BackgroundImage } from '../../../components/BackgroundImage'
 import { useFormErrors } from '../../../hooks/useFormErrors'
 
@@ -49,27 +49,11 @@ export const SlideForm = (props: TSlideFormProps) => {
           buttonText: form.buttonText,
           buttonUrl: form.buttonUrl,
           isActive: form.isActive,
+          image: form.image ?? undefined,
         },
-        success: async () => {
-          if (form.image) {
-            const imageFormData = new FormData()
-            imageFormData.append('image', form.image)
-            await updateHeroSlideImage({
-              id: props.slide!.id,
-              body: imageFormData,
-              success: () => {
-                setLoading(false)
-                props.onSuccess()
-              },
-              errorHandler: (response) => {
-                tryParseResponseErrors(response)
-                setLoading(false)
-              }
-            })
-          } else {
-            setLoading(false)
-            props.onSuccess()
-          }
+        success: () => {
+          setLoading(false)
+          props.onSuccess()
         },
         errorHandler: (response) => {
           tryParseResponseErrors(response)

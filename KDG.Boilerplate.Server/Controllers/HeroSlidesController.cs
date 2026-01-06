@@ -55,34 +55,33 @@ public class HeroSlidesController : ApiControllerBase
 
     [HttpPut("{id:guid}")]
     [Authorize]
-    public async Task<IActionResult> UpdateSlide(Guid id, [FromBody] UpdateHeroSlideRequest request)
+    public async Task<IActionResult> UpdateSlide(Guid id, [FromForm] UpdateHeroSlideRequest request)
     {
-        var slide = await _heroSlidesService.UpdateSlideAsync(id, request);
-        if (slide == null)
-            return NotFound();
+        Stream? imageStream = null;
+        string? fileName = null;
+        string? contentType = null;
 
-        _logger.LogInformation("User {UserId} updated hero slide {SlideId}", UserId, id);
+        if (request.Image != null)
+        {
+            imageStream = request.Image.OpenReadStream();
+            fileName = request.Image.FileName;
+            contentType = request.Image.ContentType;
+        }
+
+        try
+        {
+            var slide = await _heroSlidesService.UpdateSlideAsync(id, request, imageStream, fileName, contentType);
+            if (slide == null)
+                return NotFound();
+
+            _logger.LogInformation("User {UserId} updated hero slide {SlideId}", UserId, id);
         
-        return Ok(slide);
-    }
-
-    [HttpPut("{id:guid}/image")]
-    [Authorize]
-    public async Task<IActionResult> UpdateSlideImage(Guid id, [FromForm] UpdateSlideImageRequest request)
-    {
-        using var stream = request.Image!.OpenReadStream();
-        var slide = await _heroSlidesService.UpdateSlideImageAsync(
-            id,
-            stream,
-            request.Image.FileName,
-            request.Image.ContentType);
-
-        if (slide == null)
-            return NotFound();
-
-        _logger.LogInformation("User {UserId} updated image for hero slide {SlideId}", UserId, id);
-        
-        return Ok(slide);
+            return Ok(slide);
+        }
+        finally
+        {
+            imageStream?.Dispose();
+        }
     }
 
     [HttpDelete("{id:guid}")]

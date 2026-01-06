@@ -15,7 +15,7 @@ export type TUpdateHeroSlideDto = Partial<Pick<
   | 'buttonUrl'
   | 'sortOrder'
   | 'isActive'
->>;
+>> & { image?: File };
 
 export type TReorderHeroSlidesDto = {
   slideIds: string[];

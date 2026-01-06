@@ -10,8 +10,7 @@ public interface IHeroSlidesService
     Task<List<HeroSlide>> GetSlidesAsync(HeroSlideFilters? filters = null);
     Task<HeroSlide?> GetSlideByIdAsync(Guid id);
     Task<HeroSlide> CreateSlideAsync(Stream imageStream, string fileName, string contentType, CreateHeroSlideRequest request);
-    Task<HeroSlide?> UpdateSlideAsync(Guid id, UpdateHeroSlideRequest request);
-    Task<HeroSlide?> UpdateSlideImageAsync(Guid id, Stream imageStream, string fileName, string contentType);
+    Task<HeroSlide?> UpdateSlideAsync(Guid id, UpdateHeroSlideRequest request, Stream? imageStream = null, string? fileName = null, string? contentType = null);
     Task<bool> DeleteSlideAsync(Guid id);
     Task ReorderSlidesAsync(List<Guid> slideIds);
 }
@@ -72,34 +71,29 @@ public class HeroSlidesService : IHeroSlidesService
         });
     }
 
-    public async Task<HeroSlide?> UpdateSlideAsync(Guid id, UpdateHeroSlideRequest request)
-    {
-        return await _database.WithTransaction(async t =>
-        {
-            var updated = await _repository.UpdateAsync(t, id, request.ButtonText, request.ButtonUrl, request.SortOrder, request.IsActive);
-            if (updated != null)
-            {
-                _logger.LogInformation("Updated hero slide {SlideId}", id);
-            }
-            return updated;
-        });
-    }
-
-    public async Task<HeroSlide?> UpdateSlideImageAsync(Guid id, Stream imageStream, string fileName, string contentType)
+    public async Task<HeroSlide?> UpdateSlideAsync(Guid id, UpdateHeroSlideRequest request, Stream? imageStream = null, string? fileName = null, string? contentType = null)
     {
         var existing = await _database.WithConnection(async conn =>
             await _repository.GetByIdAsync(conn, id));
 
         if (existing == null) return null;
 
-        await _blobStorageService.DeleteAsync(existing.ImageUrl);
-
-        var newImageUrl = await _blobStorageService.UploadAsync(imageStream, fileName, contentType);
+        string? newImageUrl = null;
+        if (imageStream != null && fileName != null && contentType != null)
+        {
+            await _blobStorageService.DeleteAsync(existing.ImageUrl);
+            newImageUrl = await _blobStorageService.UploadAsync(imageStream, fileName, contentType);
+        }
 
         return await _database.WithTransaction(async t =>
         {
-            var updated = await _repository.UpdateImageUrlAsync(t, id, newImageUrl);
-            _logger.LogInformation("Updated image for hero slide {SlideId}", id);
+            if (newImageUrl != null)
+            {
+                await _repository.UpdateImageUrlAsync(t, id, newImageUrl);
+            }
+
+            var updated = await _repository.UpdateAsync(t, id, request.ButtonText, request.ButtonUrl, request.SortOrder, request.IsActive);
+            _logger.LogInformation("Updated hero slide {SlideId}", id);
             return updated;
         });
     }
