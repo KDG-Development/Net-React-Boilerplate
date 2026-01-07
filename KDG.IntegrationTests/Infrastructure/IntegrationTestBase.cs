@@ -1,7 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Dapper;
 using KDG.Boilerplate.Server.Controllers;
 using KDG.Boilerplate.Services;
 using KDG.Database.Interfaces;
@@ -20,12 +19,14 @@ public abstract class IntegrationTestBase : IClassFixture<DatabaseTestFixture>
     protected readonly DatabaseTestFixture DatabaseFixture;
     protected readonly IServiceProvider ServiceProvider;
     protected readonly IConfiguration Configuration;
+    protected readonly TestDataFactory TestData;
 
     protected IntegrationTestBase(DatabaseTestFixture databaseFixture)
     {
         DatabaseFixture = databaseFixture;
         Configuration = BuildConfiguration();
         ServiceProvider = SetupServices();
+        TestData = new TestDataFactory(GetDatabaseConnection);
     }
 
     private IConfiguration BuildConfiguration()
@@ -57,14 +58,25 @@ public abstract class IntegrationTestBase : IClassFixture<DatabaseTestFixture>
         services.AddScoped<IDatabase<NpgsqlConnection, NpgsqlTransaction>>(provider =>
             new KDG.Database.PostgreSQL(connectionString));
 
-        // Add boilerplate services
+        // Add boilerplate services - Repositories
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<ICartRepository, CartRepository>();
+        services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<IFavoritesRepository, FavoritesRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
+
+        // Add boilerplate services - Services
         services.AddScoped<IAuthService>(provider => 
             new AuthService(
                 Configuration["Jwt:Key"] ?? throw new Exception("JWT Key not configured"),
                 Configuration["Jwt:Issuer"] ?? throw new Exception("JWT Issuer not configured"),
                 Configuration["Jwt:Audience"] ?? throw new Exception("JWT Audience not configured")
             ));
+        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<ICartService, CartService>();
+        services.AddScoped<IFavoritesService, FavoritesService>();
+        services.AddScoped<ICategoryService, CategoryService>();
+        services.AddScoped<IProductService, ProductService>();
 
         // Add controllers
         services.AddScoped<AuthController>();
